@@ -1,7 +1,7 @@
 { naersk, src, lib, pkg-config, cmake, protobuf, postgresql, zlib }:
 
 naersk.buildPackage {
-  pname = "clicky-bunty-server";
+  pname = "datacare";
   version = "0.1.0";
 
   src = ./.;
@@ -13,6 +13,6 @@ naersk.buildPackage {
 
   meta = with lib; {
     description = "Simple rust server which manages users, stations and regions";
-    homepage = "https://github.com/dump-dvb/clicky-bunty-server";
+    homepage = "https://github.com/dump-dvb/datacare";
   };
 }

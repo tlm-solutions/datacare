@@ -26,14 +26,14 @@
         rec {
           checks = packages;
           packages = {
-            clicky-bunty-service = package;
+            datacare = package;
             default = package;
           };
         }
       ) // {
       overlays.default = final: prev: {
         inherit (self.packages.${prev.system})
-          clicky-bunty-service;
+          datacare;
       };
       hydraJobs =
         let

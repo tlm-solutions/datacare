@@ -584,33 +584,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "clicky-bunty-server"
-version = "0.1.0"
-dependencies = [
- "actix",
- "actix-diesel",
- "actix-identity",
- "actix-session",
- "actix-web",
- "chrono",
- "clap",
- "derive_more",
- "diesel 2.0.2",
- "dump-dvb",
- "env_logger",
- "futures",
- "log",
- "pbkdf2 0.11.0",
- "r2d2",
- "rand",
- "regex",
- "serde",
- "serde_json",
- "utoipa",
- "uuid",
-]
-
-[[package]]
 name = "cmake"
 version = "0.1.49"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -761,6 +734,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "datacare"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "actix-diesel",
+ "actix-identity",
+ "actix-session",
+ "actix-web",
+ "chrono",
+ "clap",
+ "derive_more",
+ "diesel 2.0.2",
+ "dump-dvb",
+ "env_logger",
+ "futures",
+ "log",
+ "r2d2",
+ "rand",
+ "regex",
+ "serde",
+ "serde_json",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
 name = "derive_more"
 version = "0.99.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -850,7 +849,7 @@ dependencies = [
  "dotenv",
  "log",
  "num-derive",
- "pbkdf2 0.10.1",
+ "pbkdf2",
  "rand",
  "regex",
  "serde",
@@ -1475,17 +1474,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "password-hash"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7676374caaee8a325c9e7a2ae557f216c5563a171d6997b0ef8a65af35147700"
-dependencies = [
- "base64ct",
- "rand_core",
- "subtle",
-]
-
-[[package]]
 name = "paste"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1499,19 +1487,7 @@ checksum = "271779f35b581956db91a3e55737327a03aa051e90b1c47aeb189508533adfd7"
 dependencies = [
  "digest",
  "hmac",
- "password-hash 0.3.2",
- "sha2",
-]
-
-[[package]]
-name = "pbkdf2"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83a0692ec44e4cf1ef28ca317f14f8f07da2d95ec3fa01f86e4467b725e60917"
-dependencies = [
- "digest",
- "hmac",
- "password-hash 0.4.2",
+ "password-hash",
  "sha2",
 ]
 
