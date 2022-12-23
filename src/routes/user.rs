@@ -394,7 +394,7 @@ pub async fn user_update(
 
 /// Returns information about the currently authenticated user
 #[utoipa::path(
-    put,
+    get,
     path = "/user/info",
     responses(
         (status = 200, description = "returning user information"),
@@ -447,7 +447,7 @@ pub async fn user_info(
 
 /// Returns information about the currently authenticated user
 #[utoipa::path(
-    put,
+    get,
     path = "/user/list",
     responses(
         (status = 200, description = "returning a list of public users"),
