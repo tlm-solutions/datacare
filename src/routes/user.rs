@@ -34,7 +34,7 @@ pub struct ModifyUserRequest {
     pub id: Uuid,
     pub name: Option<String>,
     pub email: Option<String>,
-    pub role: Option<Role>,
+    pub role: Option<i32>,
     pub email_setting: Option<i32>,
     pub deactivated: Option<bool>
 }
@@ -370,6 +370,16 @@ pub async fn user_update(
             return Err(ServerError::Unauthorized);
         }
     }
+    
+    // checking if the supplied role number is valid
+    if request.role.is_some() {
+        match Role::from(request.role.unwrap()) {
+            Role::Unknown => {
+                return Err(ServerError::BadClientData)
+            }
+            _ => {}
+        }
+    }
 
     let user_name = user.name.clone().map_or_else(||{request.name.clone()}, |value| {Some(request.name.clone().unwrap_or(value))});
     let user_email = user.name.clone().map_or_else(||{request.email.clone()}, |value| {Some(request.email.clone().unwrap_or(value))});
@@ -378,7 +388,7 @@ pub async fn user_update(
         .set((
             name.eq(user_name),
             email.eq(user_email),
-            role.eq(request.role.clone().map(|value| {value.as_int()}).unwrap_or(user.role)),
+            role.eq(request.role.unwrap_or(user.role)),
             deactivated.eq(request.deactivated.unwrap_or(user.deactivated)),
         ))
         .get_result::<User>(&mut database_connection) {
