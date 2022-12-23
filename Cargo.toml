@@ -7,9 +7,7 @@ edition = "2021"
 dump-dvb = { version = "0.6", git = "https://github.com/dump-dvb/dump-dvb.rs", features = ["management"]}
 clap = { version = "4.0", features = ["derive"] }
 
-actix = "0.13"
 actix-web = "4.0"
-actix-diesel = { git = "https://github.com/frol/actix-diesel", branch = "actix-0.13", features = ["actix-web"] }
 actix-identity = "*"
 actix-session= { version = "0.7", features = ["redis-actor-session"] }
 
@@ -22,13 +20,11 @@ diesel = { version = "2", features = ["postgres", "r2d2", "uuid", "chrono"] }
 r2d2 = "*"
 
 # utils
-chrono = "0.4"
 uuid = { version = "*", features = ["serde", "v4"] }
 env_logger = "*"
 log = "*"
 rand = "*"
 
-futures = "0.3"
 utoipa = { version = "2", features = ["actix_extras"] }
 regex = "*"
 derive_more = "*"
