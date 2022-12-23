@@ -34,7 +34,7 @@ with requests.Session() as s:
     print(create_user_response.headers)
     print(create_user_response.content)
 
-    list_user_response = s.post('https://datacare.staging.dvb.solutions/user/info')
+    list_user_response = s.get('https://datacare.staging.dvb.solutions/user/info')
     print(list_user_response)
     print(list_user_response.content)
 

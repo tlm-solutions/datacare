@@ -406,7 +406,7 @@ pub async fn user_info(
     pool: web::Data<DbPool>,
     identity: Identity,
     _req: HttpRequest,
-    request: web::Json<Option<UuidRequest>>,
+    request: Option<web::Json<UuidRequest>>,
 ) ->  Result<web::Json<User>, ServerError> {
     let mut database_connection = match pool.get() {
          Ok(conn) => conn,
@@ -418,7 +418,7 @@ pub async fn user_info(
 
     let session_user = fetch_user(identity, &mut database_connection)?;
 
-    let interesting_user_id = match &*request {
+    let interesting_user_id = match request {
         Some(found_request) => {
             if Role::from(session_user.role) == Role::Administrator || session_user.id == found_request.id {
                 found_request.id
