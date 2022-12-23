@@ -69,7 +69,7 @@ async fn main() -> std::io::Result<()> {
     }
 
     info!("Starting Data Collection Server ... ");
-    let host = args.api_host.as_str();
+    let host = args.host.as_str();
     let port = args.port;
     debug!("Listening on: {}:{}", host, port);
 
