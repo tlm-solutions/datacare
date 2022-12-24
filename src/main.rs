@@ -93,12 +93,12 @@ async fn main() -> std::io::Result<()> {
             .route("/user/list", web::get().to(routes::user::user_list))
             .route(
                 "/region/create",
-                web::get().to(routes::region::region_create),
+                web::post().to(routes::region::region_create),
             )
             .route("/region/list", web::get().to(routes::region::region_list))
             .route(
                 "/region/update",
-                web::get().to(routes::region::region_update),
+                web::put().to(routes::region::region_update),
             )
     })
     .bind((host, port))?

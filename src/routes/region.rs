@@ -120,7 +120,7 @@ pub async fn region_list(
 
 /// will overwritte the specified region
 #[utoipa::path(
-    post,
+    put,
     path = "/region/update",
     responses(
         (status = 200, description = "successfully edited region", body = Region),
