@@ -4,27 +4,27 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tlms = { version = "*", git = "https://github.com/tlm-solutions/tlms.rs", features = ["management", "telegrams"]}
-clap = { version = "*", features = ["derive"] }
+tlms = { version = "0.7", git = "https://github.com/tlm-solutions/tlms.rs", features = ["management", "telegrams"]}
+clap = { version = "4", features = ["derive"] }
 
-actix-web = "*"
-actix-identity = "*"
-actix-session= { version = "*", features = ["redis-actor-session"] }
+actix-web = "4"
+actix-identity = "0"
+actix-session= { version = "0", features = ["redis-actor-session"] }
 
 # serde serialization / deserialization
-serde_json = "*"
-serde = { version = "*", features = ["derive"] }
+serde_json = "1"
+serde = { version = "1", features = ["derive"] }
 
 # database
-diesel = { version = "*", features = ["postgres", "r2d2", "uuid", "chrono", "i-implement-a-third-party-backend-and-opt-into-breaking-changes"] }
-r2d2 = "*"
+diesel = { version = "2", features = ["postgres", "r2d2", "uuid", "chrono"] }
+r2d2 = "0"
 
 # utils
-uuid = { version = "*", features = ["serde", "v4"] }
-env_logger = "*"
-log = "*"
-rand = "*"
+uuid = { version = "1", features = ["serde", "v4"] }
+env_logger = "0"
+log = "0"
+rand = "0"
 
-utoipa = { version = "*", features = ["actix_extras"] }
-regex = "*"
-derive_more = "*"
+utoipa = { version = "2", features = ["actix_extras"] }
+regex = "1"
+derive_more = "0"
