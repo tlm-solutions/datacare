@@ -82,23 +82,22 @@ async fn main() -> std::io::Result<()> {
             ))
             .app_data(connection_pool.clone())
             .route(
-                "/user/register",
+                "/auth/register",
                 web::post().to(routes::user::user_register),
             )
-            .route("/user/login", web::post().to(routes::user::user_login))
-            .route("/user/logout", web::post().to(routes::user::user_logout))
-            .route("/user/update", web::put().to(routes::user::user_update))
-            .route("/user/delete", web::delete().to(routes::user::user_delete))
-            .route("/user/info", web::get().to(routes::user::user_info))
-            .route("/user/list", web::get().to(routes::user::user_list))
+            .route("/auth/login", web::post().to(routes::user::user_login))
+            .route("/auth/logout", web::post().to(routes::user::user_logout))
+            .route("/user", web::get().to(routes::user::user_list))
+            .route("/user/{id}", web::put().to(routes::user::user_update))
+            .route("/user/{id}", web::delete().to(routes::user::user_delete))
+            .route("/user/{id}", web::get().to(routes::user::user_info))
+            .route("/region", web::post().to(routes::region::region_create))
+            .route("/region", web::get().to(routes::region::region_list))
+            .route("/region/{id}", web::put().to(routes::region::region_update))
+            .route("/region/{id}", web::get().to(routes::region::region_info))
             .route(
-                "/region/create",
-                web::post().to(routes::region::region_create),
-            )
-            .route("/region/list", web::get().to(routes::region::region_list))
-            .route(
-                "/region/update",
-                web::put().to(routes::region::region_update),
+                "/region/{id}",
+                web::delete().to(routes::region::region_delete),
             )
     })
     .bind((host, port))?

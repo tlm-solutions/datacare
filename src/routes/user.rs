@@ -1,5 +1,5 @@
 use crate::{routes::ServerError, DbPool};
-use dump_dvb::management::user::{hash_password, verify_password, Role, User};
+use tlms::management::user::{hash_password, verify_password, Role, User};
 
 use actix_identity::Identity;
 use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
@@ -73,8 +73,8 @@ pub fn fetch_user(
     user: Identity,
     database_connection: &mut PgConnection,
 ) -> Result<User, ServerError> {
-    use dump_dvb::schema::users::dsl::users;
-    use dump_dvb::schema::users::id;
+    use tlms::schema::users::dsl::users;
+    use tlms::schema::users::id;
 
     // user uuid from currently authenticat
     let user_id: Uuid = match user.id() {
@@ -126,8 +126,8 @@ pub async fn user_register(
         }
     };
 
-    use dump_dvb::schema::users::dsl::users;
-    use dump_dvb::schema::users::email;
+    use tlms::schema::users::dsl::users;
+    use tlms::schema::users::email;
 
     match diesel::dsl::select(diesel::dsl::exists(
         users.filter(email.eq(request.email.clone())),
@@ -232,8 +232,8 @@ pub async fn user_login(
         }
     };
 
-    use dump_dvb::schema::users::dsl::users;
-    use dump_dvb::schema::users::email;
+    use tlms::schema::users::dsl::users;
+    use tlms::schema::users::email;
 
     match users
         .filter(email.eq(request.email.clone()))
@@ -315,8 +315,8 @@ pub async fn user_delete(
         return Err(ServerError::Unauthorized);
     }
 
-    use dump_dvb::schema::users::dsl::users;
-    use dump_dvb::schema::users::{deactivated, id};
+    use tlms::schema::users::dsl::users;
+    use tlms::schema::users::{deactivated, id};
 
     match diesel::update(users.filter(id.eq(request.id)))
         .set((deactivated.eq(true),))
@@ -357,8 +357,8 @@ pub async fn user_update(
         }
     };
 
-    use dump_dvb::schema::users::dsl::users;
-    use dump_dvb::schema::users::{deactivated, email, id, name, role};
+    use tlms::schema::users::dsl::users;
+    use tlms::schema::users::{deactivated, email, id, name, role};
 
     // user which should be modified
     let user = match users
@@ -456,8 +456,8 @@ pub async fn user_info(
         None => session_user.id,
     };
 
-    use dump_dvb::schema::users::dsl::users;
-    use dump_dvb::schema::users::id;
+    use tlms::schema::users::dsl::users;
+    use tlms::schema::users::id;
 
     // fetching interesting user
     let user = match users
@@ -500,7 +500,7 @@ pub async fn user_list(
         return Err(ServerError::Unauthorized);
     }
 
-    use dump_dvb::schema::users::dsl::users;
+    use tlms::schema::users::dsl::users;
 
     // fetching interesting user
     let users_list = match users.load::<User>(&mut database_connection) {
