@@ -69,8 +69,10 @@ pub struct DeactivateRequest {
         user::user_info,
         user::user_list,
         region::region_create,
+        region::region_update,
         region::region_list,
-        region::region_update
+        region::region_info,
+        region::region_delete
     ),
     components(schemas(
         user::RegisterUserRequest,
@@ -81,7 +83,9 @@ pub struct DeactivateRequest {
         user::CreateUserResponse,
         region::RegionCreationResponse,
         region::CreateRegionRequest,
-        region::EditRegionRequest
+        region::EditRegionRequest,
+        region::Stats,
+        region::RegionInfoStruct
     ))
 )]
 pub struct ApiDoc;

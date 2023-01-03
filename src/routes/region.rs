@@ -137,7 +137,7 @@ pub async fn region_list(
     }
 }
 
-/// will overwritte the specified region
+/// Will overwrite a region with the new data on success it will return the updated region.
 #[utoipa::path(
     put,
     path = "/region/{id}",
@@ -194,12 +194,29 @@ pub async fn region_update(
     }
 }
 
-/// will fetch more specific data from a region
+/// This endpoint will fetch significantly more information about a region like
+/// which stations are inside the region and some core metrics like how many telegrams
+/// are received globally and rates for different time intervals.
+///
+/// the returned json will look something like this:
+///
+///´´´json
+///{
+///      "region_data": { <region_struct> },
+///      "stations": [ {...} ],
+///      "stats": {
+///          "telegram_count": 1000,
+///          "last_month_receive_rate": 5.312,
+///          "last_day_receive_rate": 2.3,
+///      }
+///}
+///´´´
 #[utoipa::path(
     get,
     path = "/region/{id}",
     responses(
         (status = 200, description = "will return more detailled information about a region"),
+        (status = 400, description = "user suplied an unkown region id"),
         (status = 500, description = "postgres pool error"),
     ),
 )]
@@ -219,16 +236,6 @@ pub async fn region_info(
 
     use tlms::schema::stations::dsl::stations;
 
-    // TODO: think about it after we figure out what we want to do actually
-    //{
-    //      "region_data": { <region_struct> },
-    //      "stations": [ {...} ],
-    //      "stats": {
-    //          "telegram_count": 1000,
-    //          "last_month_receive_rate": 5.312,
-    //          "last_day_receive_rate": 2.3,
-    //      }
-    //}
 
     use tlms::schema::regions::dsl::regions;
     use tlms::schema::regions::id;
