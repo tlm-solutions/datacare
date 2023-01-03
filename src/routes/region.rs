@@ -79,6 +79,7 @@ pub async fn region_create(
         }
     };
 
+    // get currently logged in user
     let user_session = fetch_user(identity, &mut database_connection)?;
 
     if !user_session.is_admin() {
@@ -131,6 +132,7 @@ pub async fn region_list(
 
     use tlms::schema::regions::dsl::regions;
 
+    // just SELECT * FROM regions;
     match regions.load::<Region>(&mut database_connection) {
         Ok(region_list) => Ok(web::Json(region_list)),
         Err(_) => Err(ServerError::BadClientData),
@@ -234,9 +236,7 @@ pub async fn region_info(
         }
     };
 
-    use tlms::schema::stations::dsl::stations;
-
-
+    // if the region doesn't exist we can directly dispose of the request
     use tlms::schema::regions::dsl::regions;
     use tlms::schema::regions::id;
     let region_struct: Region = match regions
@@ -252,8 +252,11 @@ pub async fn region_info(
 
     let user_session = fetch_user(identity, &mut database_connection)?;
 
+    use tlms::schema::stations::dsl::stations;
     use tlms::schema::stations::{owner, public, region as station_region};
 
+    // if the currently logged in user is an admin we return all stations in this region
+    // otherwise just the stations that are public or belong to this user.
     let found_stations = if user_session.is_admin() {
         match stations
             .filter(station_region.eq(path.0))
@@ -283,6 +286,7 @@ pub async fn region_info(
     use tlms::schema::r09_telegrams::dsl::r09_telegrams;
     use tlms::schema::r09_telegrams::{id as telegram_id, region as telegram_region, time};
 
+    // counts telegram from this regions over different time intervals
     let telegram_count_last_day = match r09_telegrams
         .filter(telegram_region.eq(path.0))
         .filter(time.lt(now - 1_i32.days()))
@@ -367,9 +371,8 @@ pub async fn region_delete(
     use tlms::schema::stations::region as station_region;
 
     //use diesel::{select, dsl::exists};
-    // TODO: exists ist currently completely broken fix it later:
-    // let exists = match select(exists(station_region.eq(path.0))).get_result(&mut database_connection) {
-
+    // TODO: exists ist currently completely broken fix with a later diesel release
+    // check if there are any station with this region
     let exists = match stations
         .filter(station_region.eq(path.0))
         .load::<Station>(&mut database_connection)
@@ -389,6 +392,8 @@ pub async fn region_delete(
     use tlms::schema::regions::dsl::regions;
     use tlms::schema::regions::{deactivated, id};
 
+    // if there was a never a station with this region we can savely delete it otherwise
+    // we just deactivate this region
     if exists {
         match diesel::update(regions.filter(id.eq(path.0)))
             .set((deactivated.eq(true),))
