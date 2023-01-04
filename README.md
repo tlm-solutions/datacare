@@ -22,16 +22,16 @@ Server which handels users, regions and stations. This service is the main point
 ### Commandline Arguments
 
 ```
-management server for dump-dvb
+management server for tlms
 
 Usage: datacare [OPTIONS]
 
 Options:
-  -a, --api-host <API_HOST>  [default: 127.0.0.1]
-  -p, --port <PORT>          [default: 8080]
+      --host <HOST>  [default: 127.0.0.1]
+      --port <PORT>  [default: 8080]
   -s, --swagger
-  -h, --help                 Print help information
-  -V, --version              Print version information
+  -h, --help         Print help information
+  -V, --version      Print version information
 ```
 
 ## Documentation 

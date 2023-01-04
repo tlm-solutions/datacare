@@ -4,27 +4,27 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-dump-dvb = { version = "0.6", git = "https://github.com/dump-dvb/dump-dvb.rs", features = ["management"]}
-clap = { version = "4.0", features = ["derive"] }
+tlms = { version = "0.7", git = "https://github.com/tlm-solutions/tlms.rs", features = ["management", "telegrams"]}
+clap = { version = "4", features = ["derive"] }
 
-actix-web = "4.0"
-actix-identity = "*"
-actix-session= { version = "0.7", features = ["redis-actor-session"] }
+actix-web = "4"
+actix-identity = "0"
+actix-session= { version = "0", features = ["redis-actor-session"] }
 
 # serde serialization / deserialization
-serde_json = "1.0"
-serde = { version = "1.0", features = ["derive"] }
+serde_json = "1"
+serde = { version = "1", features = ["derive"] }
 
 # database
 diesel = { version = "2", features = ["postgres", "r2d2", "uuid", "chrono"] }
-r2d2 = "*"
+r2d2 = "0"
 
 # utils
-uuid = { version = "*", features = ["serde", "v4"] }
-env_logger = "*"
-log = "*"
-rand = "*"
+uuid = { version = "1", features = ["serde", "v4"] }
+env_logger = "0"
+log = "0"
+rand = "0"
 
 utoipa = { version = "2", features = ["actix_extras"] }
-regex = "*"
-derive_more = "*"
+regex = "1"
+derive_more = "0"

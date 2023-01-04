@@ -13,6 +13,6 @@ naersk.buildPackage {
 
   meta = with lib; {
     description = "Simple rust server which manages users, stations and regions";
-    homepage = "https://github.com/dump-dvb/datacare";
+    homepage = "https://github.com/tlm-solutions/datacare";
   };
 }

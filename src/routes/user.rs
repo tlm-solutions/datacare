@@ -1,16 +1,14 @@
 use crate::{routes::ServerError, DbPool};
-use dump_dvb::management::user::{
-    Role, User, hash_password, verify_password
-};
+use tlms::management::user::{hash_password, verify_password, Role, User};
 
-use actix_web::{web, HttpResponse, HttpRequest, HttpMessage};
 use actix_identity::Identity;
+use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
 use diesel::query_dsl::RunQueryDsl;
-use diesel::{QueryDsl, ExpressionMethods, PgConnection};
-use utoipa::ToSchema;
-use log::{error, debug, warn};
+use diesel::{ExpressionMethods, PgConnection, QueryDsl};
+use log::{debug, error, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// request for registering a new user
@@ -28,7 +26,7 @@ pub struct LoginRequest {
     pub password: String,
 }
 
-/// modifing a user 
+/// modifing a user
 #[derive(Deserialize, Serialize, ToSchema, Debug)]
 pub struct ModifyUserRequest {
     pub id: Uuid,
@@ -36,7 +34,7 @@ pub struct ModifyUserRequest {
     pub email: Option<String>,
     pub role: Option<i32>,
     pub email_setting: Option<i32>,
-    pub deactivated: Option<bool>
+    pub deactivated: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, ToSchema, Debug)]
@@ -71,9 +69,12 @@ pub struct CreateUserResponse {
 }
 
 /// takes a cookie and returnes the corresponging user struct
-pub fn fetch_user(user: Identity, database_connection: &mut PgConnection) -> Result<User, ServerError> {
-    use dump_dvb::schema::users::dsl::users;
-    use dump_dvb::schema::users::id;
+pub fn fetch_user(
+    user: Identity,
+    database_connection: &mut PgConnection,
+) -> Result<User, ServerError> {
+    use tlms::schema::users::dsl::users;
+    use tlms::schema::users::id;
 
     // user uuid from currently authenticat
     let user_id: Uuid = match user.id() {
@@ -81,25 +82,27 @@ pub fn fetch_user(user: Identity, database_connection: &mut PgConnection) -> Res
             Ok(parsed_uuid) => parsed_uuid,
             Err(e) => {
                 error!("problem with decoding id from cookie {:?}", e);
-                return Err(ServerError::BadClientData)
+                return Err(ServerError::BadClientData);
             }
         },
         Err(e) => {
             error!("problem with fetching id from cookie {:?}", e);
-            return Err(ServerError::BadClientData)
+            return Err(ServerError::BadClientData);
         }
     };
 
     // user struct from currently authenticated user
-    match users.filter(id.eq(user_id)).first::<User>(database_connection) {
+    match users
+        .filter(id.eq(user_id))
+        .first::<User>(database_connection)
+    {
         Ok(found_user) => Ok(found_user),
-        Err(_) => Err(ServerError::BadClientData)
+        Err(_) => Err(ServerError::BadClientData),
     }
 }
 
-
 /// This endpoint if registrating a new users
-/// it needs a valid email address a user name and password which is at least 8 
+/// it needs a valid email address a user name and password which is at least 8
 /// characters long
 #[utoipa::path(
     post,
@@ -114,21 +117,23 @@ pub async fn user_register(
     pool: web::Data<DbPool>,
     req: HttpRequest,
     request: web::Json<RegisterUserRequest>,
-    ) ->  Result<web::Json<CreateUserResponse>, ServerError> {
-
+) -> Result<web::Json<CreateUserResponse>, ServerError> {
     let mut database_connection = match pool.get() {
-         Ok(conn) => conn,
-         Err(e) => {
-             error!("cannot get connection from connection pool {:?}", e);
-             return Err(ServerError::InternalError);
-         }
+        Ok(conn) => conn,
+        Err(e) => {
+            error!("cannot get connection from connection pool {:?}", e);
+            return Err(ServerError::InternalError);
+        }
     };
 
-    use dump_dvb::schema::users::dsl::users;
-    use dump_dvb::schema::users::email;
+    use tlms::schema::users::dsl::users;
+    use tlms::schema::users::email;
 
-    match diesel::dsl::select(diesel::dsl::exists(users.filter(email.eq(request.email.clone()))))
-            .get_result(&mut database_connection) {
+    match diesel::dsl::select(diesel::dsl::exists(
+        users.filter(email.eq(request.email.clone())),
+    ))
+    .get_result(&mut database_connection)
+    {
         Ok(email_exists) => {
             if email_exists {
                 return Err(ServerError::BadClientData);
@@ -145,7 +150,10 @@ pub async fn user_register(
     )
     .unwrap();
 
-    if !email_regex.is_match(&request.email) || request.name.is_empty() || request.password.len() < 8 {
+    if !email_regex.is_match(&request.email)
+        || request.name.is_empty()
+        || request.password.len() < 8
+    {
         return Err(ServerError::BadClientData);
     }
 
@@ -169,9 +177,10 @@ pub async fn user_register(
 
     match diesel::insert_into(users)
         .values(&user)
-        .execute(&mut database_connection) {
+        .execute(&mut database_connection)
+    {
         Err(e) => {
-            error!("while trying to insert trekkie user {:?}", e);
+            error!("while trying to insert user {:?}", e);
             return Err(ServerError::BadClientData);
         }
         _ => {}
@@ -180,7 +189,10 @@ pub async fn user_register(
     match Identity::login(&req.extensions(), user.id.to_string().into()) {
         Ok(_) => {}
         Err(e) => {
-            error!("cannot create session maybe the redis is not running. {:?}", e);
+            error!(
+                "cannot create session maybe the redis is not running. {:?}",
+                e
+            );
             return Err(ServerError::BadClientData);
         }
     };
@@ -196,7 +208,7 @@ pub async fn user_register(
     }))
 }
 
-/// This endpoint takes an email address and a password if they are both valid 
+/// This endpoint takes an email address and a password if they are both valid
 /// 200 (Success) is returned together with a session cookie.
 #[utoipa::path(
     post,
@@ -211,26 +223,31 @@ pub async fn user_login(
     pool: web::Data<DbPool>,
     req: HttpRequest,
     request: web::Json<LoginRequest>,
-    ) ->  Result<web::Json<ResponseLogin>, ServerError> {
-
+) -> Result<web::Json<ResponseLogin>, ServerError> {
     let mut database_connection = match pool.get() {
-         Ok(conn) => conn,
-         Err(e) => {
-             error!("cannot get connection from connection pool {:?}", e);
-             return Err(ServerError::InternalError);
-         }
+        Ok(conn) => conn,
+        Err(e) => {
+            error!("cannot get connection from connection pool {:?}", e);
+            return Err(ServerError::InternalError);
+        }
     };
 
-    use dump_dvb::schema::users::dsl::users;
-    use dump_dvb::schema::users::email;
+    use tlms::schema::users::dsl::users;
+    use tlms::schema::users::email;
 
-    match users.filter(email.eq(request.email.clone())).first::<User>(&mut database_connection) {
+    match users
+        .filter(email.eq(request.email.clone()))
+        .first::<User>(&mut database_connection)
+    {
         Ok(user) => {
             if verify_password(&request.password, &user.password) {
                 match Identity::login(&req.extensions(), user.id.to_string().into()) {
                     Ok(_) => {}
                     Err(e) => {
-                        error!("cannot create session maybe the redis is not running. {:?}", e);
+                        error!(
+                            "cannot create session maybe the redis is not running. {:?}",
+                            e
+                        );
                         return Err(ServerError::InternalError);
                     }
                 };
@@ -262,15 +279,12 @@ pub async fn user_login(
 
     ),
 )]
-pub async fn user_logout(
-    user: Identity,
-    _req: HttpRequest,
-) ->  Result<HttpResponse, ServerError> {
+pub async fn user_logout(user: Identity, _req: HttpRequest) -> Result<HttpResponse, ServerError> {
     user.logout();
     Ok(HttpResponse::Ok().finish())
 }
 
-/// we can not really delete a user we mark the user as deactivated which strips 
+/// we can not really delete a user we mark the user as deactivated which strips
 /// him of every priviliges and function
 #[utoipa::path(
     delete,
@@ -286,32 +300,31 @@ pub async fn user_delete(
     identity: Identity,
     _req: HttpRequest,
     request: web::Json<UuidRequest>,
-) ->  Result<HttpResponse, ServerError> {
+) -> Result<HttpResponse, ServerError> {
     let mut database_connection = match pool.get() {
-         Ok(conn) => conn,
-         Err(e) => {
-             error!("cannot get connection from connection pool {:?}", e);
-             return Err(ServerError::InternalError);
-         }
+        Ok(conn) => conn,
+        Err(e) => {
+            error!("cannot get connection from connection pool {:?}", e);
+            return Err(ServerError::InternalError);
+        }
     };
 
     let session_user = fetch_user(identity, &mut database_connection)?;
 
-    if Role::from(session_user.role) != Role::Administrator {
+    if !session_user.is_admin() {
         return Err(ServerError::Unauthorized);
     }
 
-    use dump_dvb::schema::users::dsl::users;
-    use dump_dvb::schema::users::{deactivated, id};
+    use tlms::schema::users::dsl::users;
+    use tlms::schema::users::{deactivated, id};
 
     match diesel::update(users.filter(id.eq(request.id)))
-        .set((
-            deactivated.eq(true),
-        ))
-        .get_result::<User>(&mut database_connection) {
+        .set((deactivated.eq(true),))
+        .get_result::<User>(&mut database_connection)
+    {
         Ok(_) => {
             return Ok(HttpResponse::Ok().finish());
-        },
+        }
         Err(e) => {
             error!("cannot deactivate user because of {:?}", e);
             return Err(ServerError::InternalError);
@@ -335,31 +348,32 @@ pub async fn user_update(
     identity: Identity,
     _req: HttpRequest,
     request: web::Json<ModifyUserRequest>,
-) ->  Result<HttpResponse, ServerError> {
+) -> Result<HttpResponse, ServerError> {
     let mut database_connection = match pool.get() {
-         Ok(conn) => conn,
-         Err(e) => {
-             error!("cannot get connection from connection pool {:?}", e);
-             return Err(ServerError::InternalError);
-         }
+        Ok(conn) => conn,
+        Err(e) => {
+            error!("cannot get connection from connection pool {:?}", e);
+            return Err(ServerError::InternalError);
+        }
     };
 
-    use dump_dvb::schema::users::dsl::users;
-    use dump_dvb::schema::users::{deactivated, email, id, name, role};
+    use tlms::schema::users::dsl::users;
+    use tlms::schema::users::{deactivated, email, id, name, role};
 
     // user which should be modified
-    let user = match users.filter(id.eq(request.id)).first::<User>(&mut database_connection) {
+    let user = match users
+        .filter(id.eq(request.id))
+        .first::<User>(&mut database_connection)
+    {
         Ok(found_user) => found_user,
-        Err(_) => {
-            return Err(ServerError::BadClientData)
-        }
+        Err(_) => return Err(ServerError::BadClientData),
     };
 
     let session_user = fetch_user(identity, &mut database_connection)?;
 
     // TODO: can be simplified
     // current user is admin he can do what ever he wants
-    if Role::from(session_user.role) != Role::Administrator {
+    if !session_user.is_admin() {
         // its fine if the user tries to modify him self or an administrator modifies other user
         if request.id != session_user.id {
             return Err(ServerError::Unauthorized);
@@ -370,19 +384,23 @@ pub async fn user_update(
             return Err(ServerError::Unauthorized);
         }
     }
-    
+
     // checking if the supplied role number is valid
     if request.role.is_some() {
         match Role::from(request.role.unwrap()) {
-            Role::Unknown => {
-                return Err(ServerError::BadClientData)
-            }
+            Role::Unknown => return Err(ServerError::BadClientData),
             _ => {}
         }
     }
 
-    let user_name = user.name.clone().map_or_else(||{request.name.clone()}, |value| {Some(request.name.clone().unwrap_or(value))});
-    let user_email = user.name.clone().map_or_else(||{request.email.clone()}, |value| {Some(request.email.clone().unwrap_or(value))});
+    let user_name = user.name.clone().map_or_else(
+        || request.name.clone(),
+        |value| Some(request.name.clone().unwrap_or(value)),
+    );
+    let user_email = user.name.clone().map_or_else(
+        || request.email.clone(),
+        |value| Some(request.email.clone().unwrap_or(value)),
+    );
 
     match diesel::update(users.filter(id.eq(request.id)))
         .set((
@@ -391,10 +409,9 @@ pub async fn user_update(
             role.eq(request.role.unwrap_or(user.role)),
             deactivated.eq(request.deactivated.unwrap_or(user.deactivated)),
         ))
-        .get_result::<User>(&mut database_connection) {
-        Ok(_) => {
-            Ok(HttpResponse::Ok().finish())
-        },
+        .get_result::<User>(&mut database_connection)
+    {
+        Ok(_) => Ok(HttpResponse::Ok().finish()),
         Err(error) => {
             error!("error occured while trying to update user {:?}", error);
             Err(ServerError::InternalError)
@@ -417,43 +434,42 @@ pub async fn user_info(
     identity: Identity,
     _req: HttpRequest,
     request: Option<web::Json<UuidRequest>>,
-) ->  Result<web::Json<User>, ServerError> {
+) -> Result<web::Json<User>, ServerError> {
     let mut database_connection = match pool.get() {
-         Ok(conn) => conn,
-         Err(e) => {
-             error!("cannot get connection from connection pool {:?}", e);
-             return Err(ServerError::InternalError);
-         }
+        Ok(conn) => conn,
+        Err(e) => {
+            error!("cannot get connection from connection pool {:?}", e);
+            return Err(ServerError::InternalError);
+        }
     };
 
     let session_user = fetch_user(identity, &mut database_connection)?;
 
     let interesting_user_id = match request {
         Some(found_request) => {
-            if Role::from(session_user.role) == Role::Administrator || session_user.id == found_request.id {
+            if session_user.is_admin() || session_user.id == found_request.id {
                 found_request.id
             } else {
                 return Err(ServerError::Unauthorized);
             }
         }
-        None => session_user.id
+        None => session_user.id,
     };
 
-    use dump_dvb::schema::users::dsl::users;
-    use dump_dvb::schema::users::id;
-    
+    use tlms::schema::users::dsl::users;
+    use tlms::schema::users::id;
 
     // fetching interesting user
-    let user = match users.filter(id.eq(interesting_user_id)).first::<User>(&mut database_connection) {
+    let user = match users
+        .filter(id.eq(interesting_user_id))
+        .first::<User>(&mut database_connection)
+    {
         Ok(found_user) => found_user,
-        Err(_) => {
-            return Err(ServerError::BadClientData)
-        }
+        Err(_) => return Err(ServerError::BadClientData),
     };
 
     Ok(web::Json(user))
 }
-
 
 /// Returns information about the currently authenticated user
 #[utoipa::path(
@@ -469,31 +485,28 @@ pub async fn user_list(
     pool: web::Data<DbPool>,
     identity: Identity,
     _req: HttpRequest,
-) ->  Result<web::Json<Vec<User>>, ServerError> {
+) -> Result<web::Json<Vec<User>>, ServerError> {
     let mut database_connection = match pool.get() {
-         Ok(conn) => conn,
-         Err(e) => {
-             error!("cannot get connection from connection pool {:?}", e);
-             return Err(ServerError::InternalError);
-         }
+        Ok(conn) => conn,
+        Err(e) => {
+            error!("cannot get connection from connection pool {:?}", e);
+            return Err(ServerError::InternalError);
+        }
     };
 
     let session_user = fetch_user(identity, &mut database_connection)?;
-    
-    if Role::from(session_user.role) != Role::Administrator {
+
+    if !session_user.is_admin() {
         return Err(ServerError::Unauthorized);
     }
 
-    use dump_dvb::schema::users::dsl::users;
+    use tlms::schema::users::dsl::users;
 
     // fetching interesting user
     let users_list = match users.load::<User>(&mut database_connection) {
         Ok(found_user) => found_user,
-        Err(_) => {
-            return Err(ServerError::BadClientData)
-        }
+        Err(_) => return Err(ServerError::BadClientData),
     };
 
     Ok(web::Json(users_list))
 }
-

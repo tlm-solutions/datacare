@@ -1,16 +1,17 @@
-//mod region;
+pub mod region;
 //mod station;
 pub mod user;
 
 use actix_web::{
-    error, HttpResponse,
+    error,
     http::{header::ContentType, StatusCode},
+    HttpResponse,
 };
 
 use derive_more::{Display, Error};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use utoipa::OpenApi;
+use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct IdentifierRequest {
@@ -32,7 +33,7 @@ pub enum ServerError {
     BadClientData,
 
     #[display(fmt = "unauthorized")]
-    Unauthorized 
+    Unauthorized,
 }
 
 impl error::ResponseError for ServerError {
@@ -66,17 +67,25 @@ pub struct DeactivateRequest {
         user::user_update,
         user::user_delete,
         user::user_info,
-        user::user_list
+        user::user_list,
+        region::region_create,
+        region::region_update,
+        region::region_list,
+        region::region_info,
+        region::region_delete
     ),
-    components(
-        schemas(
-            user::RegisterUserRequest,
-            user::LoginRequest,
-            user::ModifyUserRequest,
-            user::UuidRequest,
-            user::ResponseLogin,
-            user::CreateUserResponse
-        )
-    ),
+    components(schemas(
+        user::RegisterUserRequest,
+        user::LoginRequest,
+        user::ModifyUserRequest,
+        user::UuidRequest,
+        user::ResponseLogin,
+        user::CreateUserResponse,
+        region::RegionCreationResponse,
+        region::CreateRegionRequest,
+        region::EditRegionRequest,
+        region::Stats,
+        region::RegionInfoStruct
+    ))
 )]
 pub struct ApiDoc;
