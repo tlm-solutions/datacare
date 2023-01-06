@@ -13,7 +13,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 use rand::{Rng, distributions::Alphanumeric};
 
-/// holds all the necessary information that are required to create a new region
+/// holds all the necessary information that are required to create a new station
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct CreateStationRequest {
     pub name: String,
@@ -32,7 +32,7 @@ pub struct CreateStationRequest {
 }
 
 
-/// holds all the necessary information that are required to create a new region
+/// holds all the necessary information that are required to create a new station
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct UpdateStationRequest {
     pub name: String,
@@ -48,18 +48,19 @@ pub struct UpdateStationRequest {
     pub notes: Option<String>
 }
 
-
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchStationRequest {
     pub owner: Option<Uuid>,
     pub region: Option<i64>
 }
 
+/// forces deletion of a station
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct ForceDeleteRequest {
     pub force: bool
 }
 
+/// containes the value for approved that should be set
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct ApproveStationRequest {
     pub approve: bool
@@ -235,9 +236,6 @@ pub async fn station_update(
     use tlms::schema::stations::dsl::stations;
     use tlms::schema::stations::{id, name, lat, lon, public, architecture, device, elevation, antenna, telegram_decoder_version, notes};
     
-    //use diesel::{select, dsl::exists};
-    // TODO: exists ist currently completely broken fix with a later diesel release
-    // check if there are any station with this region
     let relevant_station = match stations
         .filter(id.eq(path.0))
         .limit(1)
@@ -245,7 +243,7 @@ pub async fn station_update(
     {
         Ok(possible_station) => possible_station,
         Err(e) => {
-            error!("error while checking if region is savely deleteable {:?}", e);
+            error!("error while searching for mentioned station {:?}", e);
             return Err(ServerError::InternalError);
         }
     };
@@ -253,9 +251,8 @@ pub async fn station_update(
     if !user_session.is_admin() && user_session.id != relevant_station.owner {
         return Err(ServerError::Unauthorized);
     }
-
-    // if there was a never a station with this region we can savely delete it otherwise
-    // we just deactivate this region
+    
+    // updating stations
     match diesel::update(stations.filter(id.eq(path.0)))
         .set((
             name.eq(request.name.clone()),
@@ -310,9 +307,6 @@ pub async fn station_delete(
     use tlms::schema::stations::dsl::stations;
     use tlms::schema::stations::{id, deactivated};
     
-    //use diesel::{select, dsl::exists};
-    // TODO: exists ist currently completely broken fix with a later diesel release
-    // check if there are any station with this region
     let relevant_station = match stations
         .filter(id.eq(path.0))
         .limit(1)
@@ -320,7 +314,7 @@ pub async fn station_delete(
     {
         Ok(possible_station) => possible_station,
         Err(e) => {
-            error!("error while checking if region is savely deleteable {:?}", e);
+            error!("error while searching for mentioned station {:?}", e);
             return Err(ServerError::InternalError);
         }
     };
@@ -390,7 +384,7 @@ pub async fn station_info(
     {
         Ok(possible_station) => possible_station,
         Err(e) => {
-            error!("error while checking if region is savely deleteable {:?}", e);
+            error!("error while searching for mentioned station {:?}", e);
             return Err(ServerError::InternalError);
         }
     };
