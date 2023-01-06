@@ -95,11 +95,14 @@ async fn main() -> std::io::Result<()> {
             .route("/region", web::get().to(routes::region::region_list))
             .route("/region/{id}", web::put().to(routes::region::region_update))
             .route("/region/{id}", web::get().to(routes::region::region_info))
-            .route(
-                "/region/{id}",
-                web::delete().to(routes::region::region_delete),
-            )
-    })
+            .route("/region/{id}", web::delete().to(routes::region::region_delete))
+            .route("/station", web::post().to(routes::station::station_create))
+            .route("/station", web::get().to(routes::station::station_list))
+            .route("/station/{id}", web::get().to(routes::station::station_info))
+            .route("/station/{id}", web::delete().to(routes::station::station_delete))
+            .route("/station/{id}", web::put().to(routes::station::station_update))
+            .route("/station/{id}/approve", web::post().to(routes::station::station_approve))
+        })
     .bind((host, port))?
     .run()
     .await

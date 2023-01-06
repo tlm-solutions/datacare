@@ -106,7 +106,7 @@ pub fn fetch_user(
 /// characters long
 #[utoipa::path(
     post,
-    path = "/user/register",
+    path = "/user",
     responses(
         (status = 200, description = "user was successfully created", body = crate::routes::UserCreation),
         (status = 500, description = "postgres pool error"),
@@ -212,7 +212,7 @@ pub async fn user_register(
 /// 200 (Success) is returned together with a session cookie.
 #[utoipa::path(
     post,
-    path = "/user/login",
+    path = "/auth/login",
     responses(
         (status = 200, description = "user was successfully authenticated", body = crate::routes::UserCreation),
         (status = 500, description = "postgres pool error"),
@@ -273,7 +273,7 @@ pub async fn user_login(
 /// removes the current session and therefore logging out the user
 #[utoipa::path(
     get,
-    path = "/user/logout",
+    path = "/auth/logout",
     responses(
         (status = 200, description = "returnes old measurements"),
 
@@ -288,7 +288,7 @@ pub async fn user_logout(user: Identity, _req: HttpRequest) -> Result<HttpRespon
 /// him of every priviliges and function
 #[utoipa::path(
     delete,
-    path = "/user/delete",
+    path = "/user/{id}",
     responses(
         (status = 200, description = "successfully deleted user"),
         (status = 500, description = "postgres pool error"),
@@ -336,7 +336,7 @@ pub async fn user_delete(
 /// Only Admins or the user in question can modify attributes.
 #[utoipa::path(
     put,
-    path = "/user/update",
+    path = "/user/{id}",
     responses(
         (status = 200, description = "successfully updated user data"),
         (status = 500, description = "postgres pool error"),
@@ -422,7 +422,7 @@ pub async fn user_update(
 /// Returns information about the currently authenticated user
 #[utoipa::path(
     get,
-    path = "/user/info",
+    path = "/user/{id}",
     responses(
         (status = 200, description = "returning user information"),
         (status = 500, description = "postgres pool error"),
@@ -471,10 +471,10 @@ pub async fn user_info(
     Ok(web::Json(user))
 }
 
-/// Returns information about the currently authenticated user
+/// Returns list of users
 #[utoipa::path(
     get,
-    path = "/user/list",
+    path = "/user",
     responses(
         (status = 200, description = "returning a list of public users"),
         (status = 500, description = "postgres pool error"),
