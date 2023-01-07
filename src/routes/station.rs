@@ -340,7 +340,7 @@ pub async fn station_delete(
         }
     };
 
-    warn!("trying to deleting station! : {}", relevant_station.id);
+    warn!("trying to delete station! : {}", relevant_station.id);
 
     if user_session.is_admin() && request.is_some() && request.unwrap().force {
         match diesel::delete(stations.filter(id.eq(path.0))).execute(&mut database_connection) {
