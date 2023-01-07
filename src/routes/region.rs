@@ -323,7 +323,7 @@ pub async fn region_info(
         }
     };
 
-    return Ok(web::Json(RegionInfoStruct {
+    Ok(web::Json(RegionInfoStruct {
         region: region_struct,
         stats: Stats {
             telegram_count: telegram_count_global,
@@ -331,7 +331,7 @@ pub async fn region_info(
             last_month_receive_rate: (telegram_count_last_month as f32 / 1440f32),
         },
         stations: found_stations,
-    }));
+    }))
 }
 
 /// will overwritte or delete the specified region

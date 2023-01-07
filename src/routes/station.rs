@@ -1,5 +1,5 @@
 use crate::{routes::user::fetch_user, routes::ServerError, DbPool};
-use tlms::management::{Station, Region};
+use tlms::management::{Region, Station};
 
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, HttpResponse};
@@ -8,10 +8,10 @@ use diesel::BoolExpressionMethods;
 use diesel::{ExpressionMethods, QueryDsl};
 
 use log::{debug, error, warn};
+use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
-use rand::{Rng, distributions::Alphanumeric};
 
 /// holds all the necessary information that are required to create a new station
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -28,11 +28,11 @@ pub struct CreateStationRequest {
     pub elevation: Option<f64>,
     pub antenna: Option<i32>,
     pub telegram_decoder_version: Option<String>,
-    pub notes: Option<String>
+    pub notes: Option<String>,
 }
 
-
-/// holds all the necessary information that are required to create a new station
+/// holds all the necessary information that are required to update information about
+/// at station
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct UpdateStationRequest {
     pub name: String,
@@ -45,25 +45,25 @@ pub struct UpdateStationRequest {
     pub elevation: Option<f64>,
     pub antenna: Option<i32>,
     pub telegram_decoder_version: Option<String>,
-    pub notes: Option<String>
+    pub notes: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchStationRequest {
     pub owner: Option<Uuid>,
-    pub region: Option<i64>
+    pub region: Option<i64>,
 }
 
 /// forces deletion of a station
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct ForceDeleteRequest {
-    pub force: bool
+    pub force: bool,
 }
 
 /// containes the value for approved that should be set
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct ApproveStationRequest {
-    pub approve: bool
+    pub approve: bool,
 }
 
 /// will create a station with the owner of the currently authenticated user
@@ -104,19 +104,22 @@ pub async fn station_create(
         .filter(id.eq(request.region))
         .first::<Region>(&mut database_connection)
     {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(e) => {
-            debug!("error while querying region, probably not region with this id {:?}", e);
+            debug!(
+                "error while querying region, probably not region with this id {:?}",
+                e
+            );
             return Err(ServerError::BadClientData);
         }
     };
 
     // generate token 32 base64
     let random_token: String = rand::thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(32)
-            .map(char::from)
-            .collect();
+        .sample_iter(&Alphanumeric)
+        .take(32)
+        .map(char::from)
+        .collect();
 
     use tlms::schema::stations::dsl::stations;
 
@@ -130,14 +133,14 @@ pub async fn station_create(
         owner: user_session.id,
         approved: false,
         deactivated: false,
-        public: false,
+        public: request.public,
         radio: request.radio,
         architecture: request.architecture,
         device: request.device,
         elevation: request.elevation,
         antenna: request.antenna,
         telegram_decoder_version: request.telegram_decoder_version.clone(),
-        notes: request.notes.clone()
+        notes: request.notes.clone(),
     };
 
     match diesel::insert_into(stations)
@@ -165,7 +168,7 @@ pub async fn station_create(
 pub async fn station_list(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
-    identity: Identity,
+    unpacked_identity: Option<Identity>,
 ) -> Result<web::Json<Vec<Station>>, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,
@@ -175,35 +178,52 @@ pub async fn station_list(
         }
     };
 
-    // get currently logged in user
-    let user_session = fetch_user(identity, &mut database_connection)?;
-
     use tlms::schema::stations::dsl::stations;
-    use tlms::schema::stations::{public, owner};
-    
-    if user_session.is_admin() {
-        match stations
-            .load::<Station>(&mut database_connection) {
-            Ok(station_list) => Ok(web::Json(station_list)),
-            Err(e) => {
-                error!("error while querying database for stations {:?}", e);
-                return Err(ServerError::BadClientData);
+    use tlms::schema::stations::{owner, public};
+
+    match unpacked_identity {
+        Some(identity) => {
+            // get currently logged in user
+            let user_session = fetch_user(identity, &mut database_connection)?;
+
+            if user_session.is_admin() {
+                // admin users get all stations
+                match stations.load::<Station>(&mut database_connection) {
+                    Ok(station_list) => Ok(web::Json(station_list)),
+                    Err(e) => {
+                        error!("error while querying database for stations {:?}", e);
+                        Err(ServerError::BadClientData)
+                    }
+                }
+            } else {
+                // unprivileged session only gets public ones and their own
+                match stations
+                    .filter(public.eq(true).or(owner.eq(user_session.id)))
+                    .load::<Station>(&mut database_connection)
+                {
+                    Ok(all_station) => Ok(web::Json(all_station)),
+                    Err(e) => {
+                        error!("error while fetching the config {:?}", e);
+                        Err(ServerError::InternalError)
+                    }
+                }
             }
         }
-    } else {
-        match stations
-            .filter(public.eq(true).or(owner.eq(user_session.id)))
-            .load::<Station>(&mut database_connection)
-        {
-            Ok(all_station) => Ok(web::Json(all_station)),
-            Err(e) => {
-                error!("error while fetching the config {:?}", e);
-                return Err(ServerError::InternalError);
+        None => {
+            // no session returns only public stations
+            match stations
+                .filter(public.eq(true))
+                .load::<Station>(&mut database_connection)
+            {
+                Ok(all_station) => Ok(web::Json(all_station)),
+                Err(e) => {
+                    error!("error while fetching the config {:?}", e);
+                    Err(ServerError::InternalError)
+                }
             }
         }
     }
 }
-
 
 /// will return a list of stations applied with the filter and user permissions
 #[utoipa::path(
@@ -234,11 +254,13 @@ pub async fn station_update(
     let user_session = fetch_user(identity, &mut database_connection)?;
 
     use tlms::schema::stations::dsl::stations;
-    use tlms::schema::stations::{id, name, lat, lon, public, architecture, device, elevation, antenna, telegram_decoder_version, notes};
-    
+    use tlms::schema::stations::{
+        antenna, architecture, device, elevation, id, lat, lon, name, notes, public,
+        telegram_decoder_version,
+    };
+
     let relevant_station = match stations
         .filter(id.eq(path.0))
-        .limit(1)
         .first::<Station>(&mut database_connection)
     {
         Ok(possible_station) => possible_station,
@@ -251,7 +273,7 @@ pub async fn station_update(
     if !user_session.is_admin() && user_session.id != relevant_station.owner {
         return Err(ServerError::Unauthorized);
     }
-    
+
     // updating stations
     match diesel::update(stations.filter(id.eq(path.0)))
         .set((
@@ -264,7 +286,7 @@ pub async fn station_update(
             elevation.eq(request.elevation),
             antenna.eq(request.antenna),
             telegram_decoder_version.eq(request.telegram_decoder_version.clone()),
-            notes.eq(request.notes.clone())
+            notes.eq(request.notes.clone()),
         ))
         .get_result::<Station>(&mut database_connection)
     {
@@ -305,11 +327,10 @@ pub async fn station_delete(
     let user_session = fetch_user(identity, &mut database_connection)?;
 
     use tlms::schema::stations::dsl::stations;
-    use tlms::schema::stations::{id, deactivated};
-    
+    use tlms::schema::stations::{deactivated, id};
+
     let relevant_station = match stations
         .filter(id.eq(path.0))
-        .limit(1)
         .first::<Station>(&mut database_connection)
     {
         Ok(possible_station) => possible_station,
@@ -331,9 +352,7 @@ pub async fn station_delete(
         }
     } else if (user_session.id == relevant_station.owner) || user_session.is_admin() {
         match diesel::update(stations.filter(id.eq(path.0)))
-            .set((
-                deactivated.eq(true),
-            ))
+            .set((deactivated.eq(true),))
             .get_result::<Station>(&mut database_connection)
         {
             Ok(_) => Ok(HttpResponse::Ok().finish()),
@@ -343,7 +362,7 @@ pub async fn station_delete(
             }
         }
     } else {
-        return Err(ServerError::Unauthorized);
+        Err(ServerError::Unauthorized)
     }
 }
 
@@ -360,7 +379,7 @@ pub async fn station_delete(
 pub async fn station_info(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
-    identity: Identity,
+    wrapped_identity: Option<Identity>,
     path: web::Path<(Uuid,)>,
 ) -> Result<web::Json<Station>, ServerError> {
     let mut database_connection = match pool.get() {
@@ -371,15 +390,11 @@ pub async fn station_info(
         }
     };
 
-    // get currently logged in user
-    let user_session = fetch_user(identity, &mut database_connection)?;
-
     use tlms::schema::stations::dsl::stations;
     use tlms::schema::stations::id;
 
     let relevant_station = match stations
         .filter(id.eq(path.0))
-        .limit(1)
         .first::<Station>(&mut database_connection)
     {
         Ok(possible_station) => possible_station,
@@ -389,13 +404,29 @@ pub async fn station_info(
         }
     };
 
-    if user_session.is_admin() || relevant_station.owner == user_session.id {
-        return Ok(web::Json(relevant_station));
-    } else {
-        return Err(ServerError::Unauthorized);
+    match wrapped_identity {
+        Some(identity) => {
+            // get currently logged in user
+            let user_session = fetch_user(identity, &mut database_connection)?;
+
+            if user_session.is_admin()
+                || relevant_station.owner == user_session.id
+                || relevant_station.public
+            {
+                Ok(web::Json(relevant_station))
+            } else {
+                Err(ServerError::Unauthorized)
+            }
+        }
+        None => {
+            if relevant_station.public {
+                Ok(web::Json(relevant_station))
+            } else {
+                Err(ServerError::Unauthorized)
+            }
+        }
     }
 }
-
 
 /// will approve a station
 #[utoipa::path(
@@ -424,17 +455,18 @@ pub async fn station_approve(
 
     // get currently logged in user
     let user_session = fetch_user(identity, &mut database_connection)?;
-    
+
     if !user_session.is_admin() {
         return Err(ServerError::Unauthorized);
     }
 
     use tlms::schema::stations::dsl::stations;
-    use tlms::schema::stations::{id, approved};
+    use tlms::schema::stations::{approved, id};
 
     match diesel::update(stations.filter(id.eq(path.0)))
         .set((approved.eq(request.approve),))
-        .get_result::<Station>(&mut database_connection) {
+        .get_result::<Station>(&mut database_connection)
+    {
         Ok(_) => Ok(HttpResponse::Ok().finish()),
         Err(e) => {
             error!("cannot deactivate user because of {:?}", e);
@@ -442,4 +474,3 @@ pub async fn station_approve(
         }
     }
 }
-

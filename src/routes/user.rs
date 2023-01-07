@@ -169,24 +169,21 @@ pub async fn user_register(
         id: Uuid::new_v4(),
         name: Some(request.name.clone()),
         email: Some(request.email.clone()),
-        password: password_hash.clone(),
+        password: password_hash,
         role: Role::User.as_int(),
         deactivated: false,
         email_setting: Some(0),
     };
 
-    match diesel::insert_into(users)
+    if let Err(e) = diesel::insert_into(users)
         .values(&user)
         .execute(&mut database_connection)
     {
-        Err(e) => {
-            error!("while trying to insert user {:?}", e);
-            return Err(ServerError::BadClientData);
-        }
-        _ => {}
+        error!("while trying to insert user {:?}", e);
+        return Err(ServerError::BadClientData);
     };
 
-    match Identity::login(&req.extensions(), user.id.to_string().into()) {
+    match Identity::login(&req.extensions(), user.id.to_string()) {
         Ok(_) => {}
         Err(e) => {
             error!(
@@ -199,7 +196,7 @@ pub async fn user_register(
 
     Ok(web::Json(CreateUserResponse {
         success: true,
-        id: user.id.clone(),
+        id: user.id,
         name: request.name.clone(),
         email: request.email.clone(),
         role: Role::User.as_int(),
@@ -241,7 +238,7 @@ pub async fn user_login(
     {
         Ok(user) => {
             if verify_password(&request.password, &user.password) {
-                match Identity::login(&req.extensions(), user.id.to_string().into()) {
+                match Identity::login(&req.extensions(), user.id.to_string()) {
                     Ok(_) => {}
                     Err(e) => {
                         error!(
@@ -252,22 +249,22 @@ pub async fn user_login(
                     }
                 };
 
-                return Ok(web::Json(ResponseLogin {
+                Ok(web::Json(ResponseLogin {
                     id: user.id,
                     success: true,
                     name: user.name.clone(),
                     admin: (Role::from(user.role) == Role::Administrator),
-                }));
+                }))
             } else {
                 debug!("Password does not match");
-                return Err(ServerError::BadClientData);
+                Err(ServerError::BadClientData)
             }
         }
         Err(e) => {
             error!("Err: {:?}", e);
-            return Err(ServerError::InternalError);
+            Err(ServerError::InternalError)
         }
-    };
+    }
 }
 
 /// removes the current session and therefore logging out the user
@@ -322,12 +319,10 @@ pub async fn user_delete(
         .set((deactivated.eq(true),))
         .get_result::<User>(&mut database_connection)
     {
-        Ok(_) => {
-            return Ok(HttpResponse::Ok().finish());
-        }
+        Ok(_) => Ok(HttpResponse::Ok().finish()),
         Err(e) => {
             error!("cannot deactivate user because of {:?}", e);
-            return Err(ServerError::InternalError);
+            Err(ServerError::InternalError)
         }
     }
 }
@@ -386,11 +381,8 @@ pub async fn user_update(
     }
 
     // checking if the supplied role number is valid
-    if request.role.is_some() {
-        match Role::from(request.role.unwrap()) {
-            Role::Unknown => return Err(ServerError::BadClientData),
-            _ => {}
-        }
+    if Role::from(request.role.unwrap()) == Role::Unknown {
+        return Err(ServerError::BadClientData);
     }
 
     let user_name = user.name.clone().map_or_else(
