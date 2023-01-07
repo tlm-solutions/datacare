@@ -1,5 +1,6 @@
 use crate::{routes::ServerError, DbPool};
 use tlms::management::user::{hash_password, verify_password, Role, User};
+use tlms::schema::users::dsl::users;
 
 use actix_identity::Identity;
 use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
@@ -73,7 +74,6 @@ pub fn fetch_user(
     user: Identity,
     database_connection: &mut PgConnection,
 ) -> Result<User, ServerError> {
-    use tlms::schema::users::dsl::users;
     use tlms::schema::users::id;
 
     // user uuid from currently authenticat
@@ -106,7 +106,7 @@ pub fn fetch_user(
 /// characters long
 #[utoipa::path(
     post,
-    path = "/user/register",
+    path = "/user",
     responses(
         (status = 200, description = "user was successfully created", body = crate::routes::UserCreation),
         (status = 500, description = "postgres pool error"),
@@ -126,7 +126,6 @@ pub async fn user_register(
         }
     };
 
-    use tlms::schema::users::dsl::users;
     use tlms::schema::users::email;
 
     match diesel::dsl::select(diesel::dsl::exists(
@@ -169,24 +168,21 @@ pub async fn user_register(
         id: Uuid::new_v4(),
         name: Some(request.name.clone()),
         email: Some(request.email.clone()),
-        password: password_hash.clone(),
+        password: password_hash,
         role: Role::User.as_int(),
         deactivated: false,
         email_setting: Some(0),
     };
 
-    match diesel::insert_into(users)
+    if let Err(e) = diesel::insert_into(users)
         .values(&user)
         .execute(&mut database_connection)
     {
-        Err(e) => {
-            error!("while trying to insert user {:?}", e);
-            return Err(ServerError::BadClientData);
-        }
-        _ => {}
+        error!("while trying to insert user {:?}", e);
+        return Err(ServerError::BadClientData);
     };
 
-    match Identity::login(&req.extensions(), user.id.to_string().into()) {
+    match Identity::login(&req.extensions(), user.id.to_string()) {
         Ok(_) => {}
         Err(e) => {
             error!(
@@ -199,7 +195,7 @@ pub async fn user_register(
 
     Ok(web::Json(CreateUserResponse {
         success: true,
-        id: user.id.clone(),
+        id: user.id,
         name: request.name.clone(),
         email: request.email.clone(),
         role: Role::User.as_int(),
@@ -212,7 +208,7 @@ pub async fn user_register(
 /// 200 (Success) is returned together with a session cookie.
 #[utoipa::path(
     post,
-    path = "/user/login",
+    path = "/auth/login",
     responses(
         (status = 200, description = "user was successfully authenticated", body = crate::routes::UserCreation),
         (status = 500, description = "postgres pool error"),
@@ -232,7 +228,6 @@ pub async fn user_login(
         }
     };
 
-    use tlms::schema::users::dsl::users;
     use tlms::schema::users::email;
 
     match users
@@ -241,7 +236,7 @@ pub async fn user_login(
     {
         Ok(user) => {
             if verify_password(&request.password, &user.password) {
-                match Identity::login(&req.extensions(), user.id.to_string().into()) {
+                match Identity::login(&req.extensions(), user.id.to_string()) {
                     Ok(_) => {}
                     Err(e) => {
                         error!(
@@ -252,28 +247,28 @@ pub async fn user_login(
                     }
                 };
 
-                return Ok(web::Json(ResponseLogin {
+                Ok(web::Json(ResponseLogin {
                     id: user.id,
                     success: true,
                     name: user.name.clone(),
                     admin: (Role::from(user.role) == Role::Administrator),
-                }));
+                }))
             } else {
                 debug!("Password does not match");
-                return Err(ServerError::BadClientData);
+                Err(ServerError::BadClientData)
             }
         }
         Err(e) => {
             error!("Err: {:?}", e);
-            return Err(ServerError::InternalError);
+            Err(ServerError::InternalError)
         }
-    };
+    }
 }
 
 /// removes the current session and therefore logging out the user
 #[utoipa::path(
     get,
-    path = "/user/logout",
+    path = "/auth/logout",
     responses(
         (status = 200, description = "returnes old measurements"),
 
@@ -288,7 +283,7 @@ pub async fn user_logout(user: Identity, _req: HttpRequest) -> Result<HttpRespon
 /// him of every priviliges and function
 #[utoipa::path(
     delete,
-    path = "/user/delete",
+    path = "/user/{id}",
     responses(
         (status = 200, description = "successfully deleted user"),
         (status = 500, description = "postgres pool error"),
@@ -315,19 +310,16 @@ pub async fn user_delete(
         return Err(ServerError::Unauthorized);
     }
 
-    use tlms::schema::users::dsl::users;
     use tlms::schema::users::{deactivated, id};
 
     match diesel::update(users.filter(id.eq(request.id)))
         .set((deactivated.eq(true),))
         .get_result::<User>(&mut database_connection)
     {
-        Ok(_) => {
-            return Ok(HttpResponse::Ok().finish());
-        }
+        Ok(_) => Ok(HttpResponse::Ok().finish()),
         Err(e) => {
             error!("cannot deactivate user because of {:?}", e);
-            return Err(ServerError::InternalError);
+            Err(ServerError::InternalError)
         }
     }
 }
@@ -336,7 +328,7 @@ pub async fn user_delete(
 /// Only Admins or the user in question can modify attributes.
 #[utoipa::path(
     put,
-    path = "/user/update",
+    path = "/user/{id}",
     responses(
         (status = 200, description = "successfully updated user data"),
         (status = 500, description = "postgres pool error"),
@@ -357,7 +349,6 @@ pub async fn user_update(
         }
     };
 
-    use tlms::schema::users::dsl::users;
     use tlms::schema::users::{deactivated, email, id, name, role};
 
     // user which should be modified
@@ -386,11 +377,8 @@ pub async fn user_update(
     }
 
     // checking if the supplied role number is valid
-    if request.role.is_some() {
-        match Role::from(request.role.unwrap()) {
-            Role::Unknown => return Err(ServerError::BadClientData),
-            _ => {}
-        }
+    if Role::from(request.role.unwrap()) == Role::Unknown {
+        return Err(ServerError::BadClientData);
     }
 
     let user_name = user.name.clone().map_or_else(
@@ -422,7 +410,7 @@ pub async fn user_update(
 /// Returns information about the currently authenticated user
 #[utoipa::path(
     get,
-    path = "/user/info",
+    path = "/user/{id}",
     responses(
         (status = 200, description = "returning user information"),
         (status = 500, description = "postgres pool error"),
@@ -456,7 +444,6 @@ pub async fn user_info(
         None => session_user.id,
     };
 
-    use tlms::schema::users::dsl::users;
     use tlms::schema::users::id;
 
     // fetching interesting user
@@ -471,10 +458,10 @@ pub async fn user_info(
     Ok(web::Json(user))
 }
 
-/// Returns information about the currently authenticated user
+/// Returns list of users
 #[utoipa::path(
     get,
-    path = "/user/list",
+    path = "/user",
     responses(
         (status = 200, description = "returning a list of public users"),
         (status = 500, description = "postgres pool error"),
@@ -499,8 +486,6 @@ pub async fn user_list(
     if !session_user.is_admin() {
         return Err(ServerError::Unauthorized);
     }
-
-    use tlms::schema::users::dsl::users;
 
     // fetching interesting user
     let users_list = match users.load::<User>(&mut database_connection) {

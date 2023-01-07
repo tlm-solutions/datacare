@@ -1,5 +1,5 @@
 pub mod region;
-//mod station;
+pub mod station;
 pub mod user;
 
 use actix_web::{
@@ -72,7 +72,13 @@ pub struct DeactivateRequest {
         region::region_update,
         region::region_list,
         region::region_info,
-        region::region_delete
+        region::region_delete,
+        station::station_create,
+        station::station_list,
+        station::station_info,
+        station::station_update,
+        station::station_delete,
+        station::station_approve
     ),
     components(schemas(
         user::RegisterUserRequest,
@@ -85,7 +91,12 @@ pub struct DeactivateRequest {
         region::CreateRegionRequest,
         region::EditRegionRequest,
         region::Stats,
-        region::RegionInfoStruct
+        region::RegionInfoStruct,
+        station::CreateStationRequest,
+        station::UpdateStationRequest,
+        station::SearchStationRequest,
+        station::ForceDeleteRequest,
+        station::ApproveStationRequest
     ))
 )]
 pub struct ApiDoc;
