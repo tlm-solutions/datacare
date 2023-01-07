@@ -1,12 +1,15 @@
-use crate::{routes::ServerError, DbPool};
-use tlms::management::user::{hash_password, verify_password, Role, User};
+use crate::{
+    routes::{auth::fetch_user, ServerError},
+    DbPool,
+};
+use tlms::management::user::{hash_password, Role, User};
 use tlms::schema::users::dsl::users;
 
 use actix_identity::Identity;
 use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
 use diesel::query_dsl::RunQueryDsl;
-use diesel::{ExpressionMethods, PgConnection, QueryDsl};
-use log::{debug, error, warn};
+use diesel::{ExpressionMethods, QueryDsl};
+use log::{error, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -67,38 +70,6 @@ pub struct CreateUserResponse {
     pub role: i32,
     pub email_setting: i32,
     pub deactivated: bool,
-}
-
-/// takes a cookie and returnes the corresponging user struct
-pub fn fetch_user(
-    user: Identity,
-    database_connection: &mut PgConnection,
-) -> Result<User, ServerError> {
-    use tlms::schema::users::id;
-
-    // user uuid from currently authenticat
-    let user_id: Uuid = match user.id() {
-        Ok(found_id) => match Uuid::parse_str(&found_id) {
-            Ok(parsed_uuid) => parsed_uuid,
-            Err(e) => {
-                error!("problem with decoding id from cookie {:?}", e);
-                return Err(ServerError::BadClientData);
-            }
-        },
-        Err(e) => {
-            error!("problem with fetching id from cookie {:?}", e);
-            return Err(ServerError::BadClientData);
-        }
-    };
-
-    // user struct from currently authenticated user
-    match users
-        .filter(id.eq(user_id))
-        .first::<User>(database_connection)
-    {
-        Ok(found_user) => Ok(found_user),
-        Err(_) => Err(ServerError::BadClientData),
-    }
 }
 
 /// This endpoint if registrating a new users
@@ -202,81 +173,6 @@ pub async fn user_register(
         deactivated: false,
         email_setting: 0,
     }))
-}
-
-/// This endpoint takes an email address and a password if they are both valid
-/// 200 (Success) is returned together with a session cookie.
-#[utoipa::path(
-    post,
-    path = "/auth/login",
-    responses(
-        (status = 200, description = "user was successfully authenticated", body = crate::routes::UserCreation),
-        (status = 500, description = "postgres pool error"),
-        (status = 400, description = "invalid user data")
-    ),
-)]
-pub async fn user_login(
-    pool: web::Data<DbPool>,
-    req: HttpRequest,
-    request: web::Json<LoginRequest>,
-) -> Result<web::Json<ResponseLogin>, ServerError> {
-    let mut database_connection = match pool.get() {
-        Ok(conn) => conn,
-        Err(e) => {
-            error!("cannot get connection from connection pool {:?}", e);
-            return Err(ServerError::InternalError);
-        }
-    };
-
-    use tlms::schema::users::email;
-
-    match users
-        .filter(email.eq(request.email.clone()))
-        .first::<User>(&mut database_connection)
-    {
-        Ok(user) => {
-            if verify_password(&request.password, &user.password) {
-                match Identity::login(&req.extensions(), user.id.to_string()) {
-                    Ok(_) => {}
-                    Err(e) => {
-                        error!(
-                            "cannot create session maybe the redis is not running. {:?}",
-                            e
-                        );
-                        return Err(ServerError::InternalError);
-                    }
-                };
-
-                Ok(web::Json(ResponseLogin {
-                    id: user.id,
-                    success: true,
-                    name: user.name.clone(),
-                    admin: (Role::from(user.role) == Role::Administrator),
-                }))
-            } else {
-                debug!("Password does not match");
-                Err(ServerError::BadClientData)
-            }
-        }
-        Err(e) => {
-            error!("Err: {:?}", e);
-            Err(ServerError::InternalError)
-        }
-    }
-}
-
-/// removes the current session and therefore logging out the user
-#[utoipa::path(
-    get,
-    path = "/auth/logout",
-    responses(
-        (status = 200, description = "returnes old measurements"),
-
-    ),
-)]
-pub async fn user_logout(user: Identity, _req: HttpRequest) -> Result<HttpResponse, ServerError> {
-    user.logout();
-    Ok(HttpResponse::Ok().finish())
 }
 
 /// we can not really delete a user we mark the user as deactivated which strips

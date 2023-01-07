@@ -84,8 +84,8 @@ async fn main() -> std::io::Result<()> {
                 "/auth/register",
                 web::post().to(routes::user::user_register),
             )
-            .route("/auth/login", web::post().to(routes::user::user_login))
-            .route("/auth/logout", web::post().to(routes::user::user_logout))
+            .route("/auth/login", web::post().to(routes::auth::user_login))
+            .route("/auth/logout", web::post().to(routes::auth::user_logout))
             .route("/user", web::get().to(routes::user::user_list))
             .route("/user/{id}", web::put().to(routes::user::user_update))
             .route("/user/{id}", web::delete().to(routes::user::user_delete))

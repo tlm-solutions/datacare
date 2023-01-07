@@ -1,4 +1,4 @@
-use crate::{routes::user::fetch_user, routes::ServerError, DbPool};
+use crate::{routes::auth::fetch_user, routes::ServerError, DbPool};
 use tlms::management::{Region, Station};
 use tlms::schema::stations::dsl::stations;
 
