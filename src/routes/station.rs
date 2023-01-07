@@ -14,8 +14,6 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-
-
 /// holds all the necessary information that are required to create a new station
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct CreateStationRequest {
