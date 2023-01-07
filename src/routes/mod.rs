@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod region;
 pub mod station;
 pub mod user;
@@ -61,9 +62,9 @@ pub struct DeactivateRequest {
 #[derive(OpenApi)]
 #[openapi(
     paths(
-        user::user_login,
+        auth::user_login,
+        auth::user_logout,
         user::user_register,
-        user::user_logout,
         user::user_update,
         user::user_delete,
         user::user_info,
@@ -81,8 +82,8 @@ pub struct DeactivateRequest {
         station::station_approve
     ),
     components(schemas(
+        auth::LoginRequest,
         user::RegisterUserRequest,
-        user::LoginRequest,
         user::ModifyUserRequest,
         user::UuidRequest,
         user::ResponseLogin,
