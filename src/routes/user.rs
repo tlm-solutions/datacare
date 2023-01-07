@@ -1,5 +1,6 @@
 use crate::{routes::ServerError, DbPool};
 use tlms::management::user::{hash_password, verify_password, Role, User};
+use tlms::schema::users::dsl::users;
 
 use actix_identity::Identity;
 use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
@@ -73,7 +74,6 @@ pub fn fetch_user(
     user: Identity,
     database_connection: &mut PgConnection,
 ) -> Result<User, ServerError> {
-    use tlms::schema::users::dsl::users;
     use tlms::schema::users::id;
 
     // user uuid from currently authenticat
@@ -126,7 +126,6 @@ pub async fn user_register(
         }
     };
 
-    use tlms::schema::users::dsl::users;
     use tlms::schema::users::email;
 
     match diesel::dsl::select(diesel::dsl::exists(
@@ -229,7 +228,6 @@ pub async fn user_login(
         }
     };
 
-    use tlms::schema::users::dsl::users;
     use tlms::schema::users::email;
 
     match users
@@ -312,7 +310,6 @@ pub async fn user_delete(
         return Err(ServerError::Unauthorized);
     }
 
-    use tlms::schema::users::dsl::users;
     use tlms::schema::users::{deactivated, id};
 
     match diesel::update(users.filter(id.eq(request.id)))
@@ -352,7 +349,6 @@ pub async fn user_update(
         }
     };
 
-    use tlms::schema::users::dsl::users;
     use tlms::schema::users::{deactivated, email, id, name, role};
 
     // user which should be modified
@@ -448,7 +444,6 @@ pub async fn user_info(
         None => session_user.id,
     };
 
-    use tlms::schema::users::dsl::users;
     use tlms::schema::users::id;
 
     // fetching interesting user
@@ -491,8 +486,6 @@ pub async fn user_list(
     if !session_user.is_admin() {
         return Err(ServerError::Unauthorized);
     }
-
-    use tlms::schema::users::dsl::users;
 
     // fetching interesting user
     let users_list = match users.load::<User>(&mut database_connection) {

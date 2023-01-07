@@ -1,5 +1,6 @@
 use crate::{routes::user::fetch_user, routes::ServerError, DbPool};
 use tlms::management::{Region, Station};
+use tlms::schema::stations::dsl::stations;
 
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, HttpResponse};
@@ -12,6 +13,8 @@ use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
+
+
 
 /// holds all the necessary information that are required to create a new station
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -121,8 +124,6 @@ pub async fn station_create(
         .map(char::from)
         .collect();
 
-    use tlms::schema::stations::dsl::stations;
-
     let new_station = Station {
         id: Uuid::new_v4(),
         token: Some(random_token),
@@ -178,7 +179,6 @@ pub async fn station_list(
         }
     };
 
-    use tlms::schema::stations::dsl::stations;
     use tlms::schema::stations::{owner, public};
 
     match unpacked_identity {
@@ -253,7 +253,6 @@ pub async fn station_update(
     // get currently logged in user
     let user_session = fetch_user(identity, &mut database_connection)?;
 
-    use tlms::schema::stations::dsl::stations;
     use tlms::schema::stations::{
         antenna, architecture, device, elevation, id, lat, lon, name, notes, public,
         telegram_decoder_version,
@@ -326,7 +325,6 @@ pub async fn station_delete(
     // get currently logged in user
     let user_session = fetch_user(identity, &mut database_connection)?;
 
-    use tlms::schema::stations::dsl::stations;
     use tlms::schema::stations::{deactivated, id};
 
     let relevant_station = match stations
@@ -390,7 +388,6 @@ pub async fn station_info(
         }
     };
 
-    use tlms::schema::stations::dsl::stations;
     use tlms::schema::stations::id;
 
     let relevant_station = match stations
@@ -460,7 +457,6 @@ pub async fn station_approve(
         return Err(ServerError::Unauthorized);
     }
 
-    use tlms::schema::stations::dsl::stations;
     use tlms::schema::stations::{approved, id};
 
     match diesel::update(stations.filter(id.eq(path.0)))

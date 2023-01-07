@@ -1,5 +1,6 @@
 use crate::{routes::user::fetch_user, routes::ServerError, DbPool};
 use tlms::management::{InsertRegion, Region, Station};
+use tlms::schema::regions::dsl::regions;
 
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, HttpResponse};
@@ -86,8 +87,6 @@ pub async fn region_create(
         return Err(ServerError::Unauthorized);
     }
 
-    use tlms::schema::regions::dsl::regions;
-
     match diesel::insert_into(regions)
         .values(&InsertRegion {
             id: None,
@@ -130,8 +129,6 @@ pub async fn region_list(
         }
     };
 
-    use tlms::schema::regions::dsl::regions;
-
     // just SELECT * FROM regions;
     match regions.load::<Region>(&mut database_connection) {
         Ok(region_list) => Ok(web::Json(region_list)),
@@ -172,7 +169,6 @@ pub async fn region_update(
 
     warn!("updating region {:?}", &request);
 
-    use tlms::schema::regions::dsl::regions;
     use tlms::schema::regions::{
         encoding, frequency, id, name, r09_type, regional_company, transport_company,
     };
@@ -237,7 +233,6 @@ pub async fn region_info(
     };
 
     // if the region doesn't exist we can directly dispose of the request
-    use tlms::schema::regions::dsl::regions;
     use tlms::schema::regions::id;
     let region_struct: Region = match regions
         .filter(id.eq(path.0))
@@ -389,7 +384,6 @@ pub async fn region_delete(
 
     debug!("admin is removing station permanently: {}", exists);
 
-    use tlms::schema::regions::dsl::regions;
     use tlms::schema::regions::{deactivated, id};
 
     // if there was a never a station with this region we can savely delete it otherwise
