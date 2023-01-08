@@ -29,6 +29,9 @@
             datacare = package;
             default = package;
           };
+          devShells.default = pkgs.mkShell {
+            nativeBuildInputs = (with packages.datacare; nativeBuildInputs ++ buildInputs);
+          };
         }
       ) // {
       overlays.default = final: prev: {
