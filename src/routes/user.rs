@@ -207,6 +207,7 @@ pub async fn user_delete(
 
     use tlms::schema::users::{deactivated, id};
 
+    //TODO: add force deletion
     match diesel::update(users.filter(id.eq(path.0)))
         .set((deactivated.eq(true),))
         .get_result::<User>(&mut database_connection)
@@ -303,7 +304,7 @@ pub async fn user_update(
     }
 }
 
-/// Returns information about the currently authenticated user
+/// Returns information about the specified user
 #[utoipa::path(
     get,
     path = "/user/{id}",
@@ -318,7 +319,6 @@ pub async fn user_info(
     identity: Identity,
     _req: HttpRequest,
     path: web::Path<(Uuid,)>,
-    request: Option<web::Json<UuidRequest>>,
 ) -> Result<web::Json<User>, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,
@@ -330,22 +330,15 @@ pub async fn user_info(
 
     let session_user = fetch_user(identity, &mut database_connection)?;
 
-    let interesting_user_id = match request {
-        Some(found_request) => {
-            if session_user.is_admin() || session_user.id == found_request.id {
-                found_request.id
-            } else {
-                return Err(ServerError::Unauthorized);
-            }
-        }
-        None => session_user.id,
-    };
+    if !session_user.is_admin() && session_user.id != path.0 {
+        return Err(ServerError::Unauthorized);
+    }
 
     use tlms::schema::users::id;
 
     // fetching interesting user
     let user = match users
-        .filter(id.eq(interesting_user_id))
+        .filter(id.eq(path.0))
         .first::<User>(&mut database_connection)
     {
         Ok(found_user) => found_user,

@@ -64,6 +64,7 @@ pub struct DeactivateRequest {
     paths(
         auth::user_login,
         auth::user_logout,
+        auth::auth_info,
         user::user_register,
         user::user_update,
         user::user_delete,
