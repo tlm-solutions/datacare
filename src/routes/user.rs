@@ -33,7 +33,6 @@ pub struct LoginRequest {
 /// modifing a user
 #[derive(Deserialize, Serialize, ToSchema, Debug)]
 pub struct ModifyUserRequest {
-    pub id: Uuid,
     pub name: Option<String>,
     pub email: Option<String>,
     pub role: Option<i32>,
@@ -79,7 +78,7 @@ pub struct CreateUserResponse {
     post,
     path = "/user",
     responses(
-        (status = 200, description = "user was successfully created", body = crate::routes::UserCreation),
+       (status = 200, description = "user was successfully created", body = crate::routes::UserCreation),
         (status = 500, description = "postgres pool error"),
         (status = 400, description = "invalid user data"),
     ),
@@ -189,8 +188,8 @@ pub async fn user_register(
 pub async fn user_delete(
     pool: web::Data<DbPool>,
     identity: Identity,
+    path: web::Path<(Uuid,)>,
     _req: HttpRequest,
-    request: web::Json<UuidRequest>,
 ) -> Result<HttpResponse, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,
@@ -208,7 +207,7 @@ pub async fn user_delete(
 
     use tlms::schema::users::{deactivated, id};
 
-    match diesel::update(users.filter(id.eq(request.id)))
+    match diesel::update(users.filter(id.eq(path.0)))
         .set((deactivated.eq(true),))
         .get_result::<User>(&mut database_connection)
     {
@@ -235,6 +234,7 @@ pub async fn user_update(
     pool: web::Data<DbPool>,
     identity: Identity,
     _req: HttpRequest,
+    path: web::Path<(Uuid,)>,
     request: web::Json<ModifyUserRequest>,
 ) -> Result<HttpResponse, ServerError> {
     let mut database_connection = match pool.get() {
@@ -249,7 +249,7 @@ pub async fn user_update(
 
     // user which should be modified
     let user = match users
-        .filter(id.eq(request.id))
+        .filter(id.eq(path.0))
         .first::<User>(&mut database_connection)
     {
         Ok(found_user) => found_user,
@@ -262,7 +262,7 @@ pub async fn user_update(
     // current user is admin he can do what ever he wants
     if !session_user.is_admin() {
         // its fine if the user tries to modify him self or an administrator modifies other user
-        if request.id != session_user.id {
+        if path.0 != session_user.id {
             return Err(ServerError::Unauthorized);
         }
 
@@ -286,7 +286,7 @@ pub async fn user_update(
         |value| Some(request.email.clone().unwrap_or(value)),
     );
 
-    match diesel::update(users.filter(id.eq(request.id)))
+    match diesel::update(users.filter(id.eq(path.0)))
         .set((
             name.eq(user_name),
             email.eq(user_email),
@@ -317,6 +317,7 @@ pub async fn user_info(
     pool: web::Data<DbPool>,
     identity: Identity,
     _req: HttpRequest,
+    path: web::Path<(Uuid,)>,
     request: Option<web::Json<UuidRequest>>,
 ) -> Result<web::Json<User>, ServerError> {
     let mut database_connection = match pool.get() {
