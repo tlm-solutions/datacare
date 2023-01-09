@@ -10,7 +10,7 @@ use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::PgConnection;
 
-use actix_web::{cookie::Key, web, App, HttpServer};
+use actix_web::{cookie::Key, middleware::Logger, web, App, HttpServer};
 
 use actix_identity::IdentityMiddleware;
 use actix_session::storage::RedisActorSessionStore;
@@ -75,6 +75,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .wrap(IdentityMiddleware::default())
+            .wrap(Logger::default())
             .wrap(SessionMiddleware::new(
                 RedisActorSessionStore::new(get_redis_uri()),
                 secret_key.clone(),
@@ -86,6 +87,7 @@ async fn main() -> std::io::Result<()> {
             )
             .route("/auth/login", web::post().to(routes::auth::user_login))
             .route("/auth/logout", web::post().to(routes::auth::user_logout))
+            .route("/auth", web::get().to(routes::auth::auth_info))
             .route("/user", web::get().to(routes::user::user_list))
             .route("/user/{id}", web::put().to(routes::user::user_update))
             .route("/user/{id}", web::delete().to(routes::user::user_delete))

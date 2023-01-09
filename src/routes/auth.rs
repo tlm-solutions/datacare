@@ -144,3 +144,31 @@ pub async fn user_logout(user: Identity, _req: HttpRequest) -> Result<HttpRespon
     user.logout();
     Ok(HttpResponse::Ok().finish())
 }
+
+/// Returns information about the specified user
+#[utoipa::path(
+    get,
+    path = "/auth",
+    responses(
+        (status = 200, description = "returning user information"),
+        (status = 500, description = "postgres pool error"),
+        (status = 400, description = "invalid user id")
+    ),
+)]
+pub async fn auth_info(
+    pool: web::Data<DbPool>,
+    identity: Identity,
+    _req: HttpRequest,
+) -> Result<web::Json<User>, ServerError> {
+    let mut database_connection = match pool.get() {
+        Ok(conn) => conn,
+        Err(e) => {
+            error!("cannot get connection from connection pool {:?}", e);
+            return Err(ServerError::InternalError);
+        }
+    };
+
+    let session_user = fetch_user(identity, &mut database_connection)?;
+
+    Ok(web::Json(session_user))
+}
