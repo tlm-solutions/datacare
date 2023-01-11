@@ -1,25 +1,20 @@
 import requests
-import json 
+import json
 import logging
 import http.client as http_client
 
 import random
 import string
 
+
 def get_random_string(length):
     letters = string.ascii_lowercase
-    return ''.join(random.choice(letters) for i in range(length))
+    return "".join(random.choice(letters) for i in range(length))
 
-register_form = {
-    "name": "foobar",
-    "email": get_random_string(8) + "@example.com",
-    "password": "testtesttest"
-}
 
-login_form = {
-    "email": "test@test.com",
-    "password": "test"
-}
+register_form = {"name": "foobar", "email": get_random_string(8) + "@example.com", "password": "testtesttest"}
+
+login_form = {"email": "test@test.com", "password": "test"}
 
 update_form = {
     "id": "fill_me",
@@ -27,57 +22,61 @@ update_form = {
     "role": 9,
 }
 
+region_create_form = {"name": "testregion", "transport_company": "testcompany"}
+
+edit_region_form = {"name": "updatedregion", "transport_company": "updated"}
+
 # this enables higly verbose logging for debug purposes
-#http_client.HTTPConnection.debuglevel = 1
-#logging.basicConfig()
-#logging.getLogger().setLevel(logging.DEBUG)
-#requests_log = logging.getLogger("requests.packages.urllib3")
-#requests_log.setLevel(logging.DEBUG)
-#requests_log.propagate = True
+# http_client.HTTPConnection.debuglevel = 1
+# logging.basicConfig()
+# logging.getLogger().setLevel(logging.DEBUG)
+# requests_log = logging.getLogger("requests.packages.urllib3")
+# requests_log.setLevel(logging.DEBUG)
+# requests_log.propagate = True
+
+print_config = "minimal"
+fail_hard = True
 
 
-def test_session(s: requests.Session):
-    create_region = s.put('https://datacare.staging.dvb.solutions/region')
-    print(list_user_response)
-    print(list_user_response.content)
+def handle_response(response):
+    if response.status_code != 200:
+        print(response.__dict__)
+        raise Exception("An API call didnot return 200")
+    else:
+        if print_config == "minimal":
+            print("[SUCCESS] {} {}".format(response.request.method, response.url))
+
+        if print_config == "all":
+            print(response.__dict__)
+
+
+def test_region(s: requests.Session):
+    create_region = s.post("https://datacare.staging.dvb.solutions/region", json=region_create_form)
+    handle_response(create_region)
+    region_id = json.loads(create_region.content)["id"]
+
+    list_region = s.get("https://datacare.staging.dvb.solutions/region")
+    handle_response(list_region)
+    random_id = json.loads(list_region.content)[0]["id"]
+
+    handle_response(s.get("https://datacare.staging.dvb.solutions/region/{}".format(random_id)))
+    handle_response(s.put("https://datacare.staging.dvb.solutions/region/{}".format(region_id), json=edit_region_form))
+    handle_response(s.delete("https://datacare.staging.dvb.solutions/region/{}".format(region_id)))
 
 
 with requests.Session() as s:
-    create_user_response = s.post('https://datacare.staging.dvb.solutions/auth/register', json = register_form)
-    print(create_user_response)
-    print(create_user_response.headers)
-    print(create_user_response.content)
+    create_user_response = s.post("https://datacare.staging.dvb.solutions/auth/register", json=register_form)
+    handle_response(create_user_response)
 
-    list_user_response = s.get('https://datacare.staging.dvb.solutions/user')
-    print(list_user_response)
-    print(list_user_response.content)
+    handle_response(s.post("https://datacare.staging.dvb.solutions/auth/logout"))
+    handle_response(s.post("https://datacare.staging.dvb.solutions/auth/login", json=login_form))
+    handle_response(s.get("https://datacare.staging.dvb.solutions/auth"))
 
-    logout_user_response = s.post('https://datacare.staging.dvb.solutions/auth/logout')
-    print(logout_user_response)
-    print(logout_user_response.content)
+    test_region(s)
 
-    login_user_response = s.post('https://datacare.staging.dvb.solutions/auth/login', json = login_form)
-    print(login_user_response)
-    print(login_user_response.content)
-
-    list_user_response = s.get('https://datacare.staging.dvb.solutions/user')
-    print(list_user_response)
-    print(list_user_response.content)
+    handle_response(s.get("https://datacare.staging.dvb.solutions/user"))
 
     user_id = json.loads(create_user_response.content)["id"]
     update_form["id"] = user_id
-    print(update_form)
-    update_user_response = s.put('https://datacare.staging.dvb.solutions/user/{}'.format(user_id), json = update_form)
-    print(update_user_response)
-    print(update_user_response.content)
-
-    delete_user_response = s.delete('https://datacare.staging.dvb.solutions/user/{}'.format(user_id))
-    print(delete_user_response)
-    print(delete_user_response.content)
-
-
-
-
-
-
-
+    handle_response(s.put("https://datacare.staging.dvb.solutions/user/{}".format(user_id), json=update_form))
+    handle_response(s.delete("https://datacare.staging.dvb.solutions/user/{}".format(user_id)))

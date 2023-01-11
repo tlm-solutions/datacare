@@ -344,7 +344,6 @@ pub async fn region_delete(
     _req: HttpRequest,
     identity: Identity,
     path: web::Path<(i64,)>,
-    _request: web::Json<EditRegionRequest>,
 ) -> Result<HttpResponse, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,
