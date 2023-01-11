@@ -17,6 +17,8 @@ Server which handels users, regions and stations. This service is the main point
 - **SALT_PATH** path to file containing the salt that is used for hashing the password
 - **POSTGRES_HOST** host of postgres server
 - **POSTGRES_PORT** port of postgres server
+- **POSTGRES_USER** postgres user
+- **POSTGRES_DATABASE** postgres database to use
 - **POSTGRES_PASSWORD_PATH** password under which the dvbdump database is protected
 
 ### Commandline Arguments
