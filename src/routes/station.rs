@@ -223,7 +223,7 @@ pub async fn station_list(
     }
 }
 
-/// will return a list of stations applied with the filter and user permissions
+/// will edit a station
 #[utoipa::path(
     put,
     path = "/station/{id}",

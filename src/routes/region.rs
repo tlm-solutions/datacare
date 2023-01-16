@@ -322,8 +322,8 @@ pub async fn region_info(
         region: region_struct,
         stats: Stats {
             telegram_count: telegram_count_global,
-            last_day_receive_rate: (telegram_count_last_day as f32 / 1440f32),
-            last_month_receive_rate: (telegram_count_last_month as f32 / 1440f32),
+            last_day_receive_rate: (telegram_count_last_day as f32 / 86400f32),
+            last_month_receive_rate: (telegram_count_last_month as f32 / 2592000f32),
         },
         stations: found_stations,
     }))
