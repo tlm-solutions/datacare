@@ -10,11 +10,11 @@ use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::PgConnection;
 
-use actix_web::{cookie::Key, middleware::Logger, web, App, HttpServer};
-
 use actix_identity::IdentityMiddleware;
 use actix_session::storage::RedisActorSessionStore;
 use actix_session::SessionMiddleware;
+use actix_web::{cookie::Key, middleware::Logger, web, App, HttpServer};
+use actix_web_prom::{PrometheusMetrics, PrometheusMetricsBuilder};
 
 use utoipa::OpenApi;
 
@@ -59,6 +59,13 @@ pub fn get_redis_uri() -> String {
     )
 }
 
+pub fn get_prometheus() -> PrometheusMetrics {
+    PrometheusMetricsBuilder::new("api")
+        .endpoint("/metrics")
+        .build()
+        .unwrap()
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init();
@@ -76,8 +83,11 @@ async fn main() -> std::io::Result<()> {
 
     let connection_pool = web::Data::new(create_db_pool());
     let secret_key = Key::generate();
+    let prometheus = get_prometheus();
+
     HttpServer::new(move || {
         App::new()
+            .wrap(prometheus.clone())
             .wrap(IdentityMiddleware::default())
             .wrap(Logger::default())
             .wrap(SessionMiddleware::new(

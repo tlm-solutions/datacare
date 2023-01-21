@@ -279,6 +279,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix-web-prom"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9df3127d20a5d01c9fc9aceb969a38d31a6767e1b48a54d55a8f56c769a84923"
+dependencies = [
+ "actix-web",
+ "futures-core",
+ "pin-project-lite",
+ "prometheus",
+]
+
+[[package]]
 name = "adler"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -813,6 +825,7 @@ dependencies = [
  "actix-identity",
  "actix-session",
  "actix-web",
+ "actix-web-prom",
  "clap",
  "derive_more",
  "diesel",
@@ -1673,6 +1686,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "prometheus"
+version = "0.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "449811d15fbdf5ceb5c1144416066429cf82316e2ec8ce0c1f6f8a02e7bbcf8c"
+dependencies = [
+ "cfg-if",
+ "fnv",
+ "lazy_static",
+ "memchr",
+ "parking_lot",
+ "thiserror",
+]
+
+[[package]]
 name = "prost"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2052,6 +2079,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "thiserror"
+version = "1.0.38"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a9cd18aa97d5c45c6603caea1da6628790b37f7a34b6ca89522331c5180fed0"
+dependencies = [
+ "thiserror-impl",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "1.0.38"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fb327af4685e4d03fa8cbcf1716380da910eeb2bb8be417e7f9fd3fb164f36f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "time"
 version = "0.1.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2107,7 +2154,7 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 [[package]]
 name = "tlms"
 version = "0.7.4"
-source = "git+https://github.com/tlm-solutions/tlms.rs#009ea490a6b833c1fe0b6b6d63b8455511f945c3"
+source = "git+https://github.com/tlm-solutions/tlms.rs#394d5a1bdccf2c561aa3245dc14ba6af10fd3282"
 dependencies = [
  "chrono",
  "csv",
@@ -2348,9 +2395,9 @@ checksum = "497961ef93d974e23eb6f433eb5fe1b7930b659f06d12dec6fc44a8f554c0bba"
 
 [[package]]
 name = "unicode-bidi"
-version = "0.3.9"
+version = "0.3.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0046be40136ef78dc325e0edefccf84ccddacd0afcc1ca54103fa3c61bbdab1d"
+checksum = "d54675592c1dbefd78cbd98db9bacd89886e1ca50692a0692baefffdeb92dd58"
 
 [[package]]
 name = "unicode-ident"
