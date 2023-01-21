@@ -10,6 +10,7 @@ clap = { version = "4", features = ["derive"] }
 actix-web = "4"
 actix-identity = "0"
 actix-session= { version = "0", features = ["redis-actor-session"] }
+actix-web-prom = "0"
 
 # serde serialization / deserialization
 serde_json = "1"
