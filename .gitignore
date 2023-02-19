@@ -5,3 +5,4 @@ result
 .direnv
 # temporary stuff
 /.tmp
+nixos.qcow2

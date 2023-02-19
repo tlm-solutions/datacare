@@ -69,10 +69,23 @@ in
       description = ''group of systemd user'';
     };
     log_level = mkOption {
+      # TODO: make an enum of possible values
       type = types.str;
       # this is a little weird because if want to see all the correct value would be trace
       default = "datacare";
       description = ''log level of the application'';
+    };
+    redis = {
+      host = mkOption {
+        type = types.str;
+        default = "127.0.0.1";
+        description = ''Host on which redis is listening'';
+      };
+      port = mkOption {
+        type = types.port;
+        default = 6379;
+        description = ''Redis port'';
+      };
     };
   };
 
@@ -98,6 +111,8 @@ in
           "POSTGRES_USER" = "${toString cfg.database.user}";
           "POSTGRES_DATABASE" = "${toString cfg.database.database}";
           "POSTGRES_PASSWORD_PATH" = "${cfg.database.passwordFile}";
+          "REDIS_HOST" = "${cfg.redis.host}";
+          "REDIS_PORT" = "${toString cfg.redis.port}";
         };
 
         serviceConfig = {
