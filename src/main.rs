@@ -17,6 +17,7 @@ use actix_web::{cookie::Key, middleware::Logger, web, App, HttpServer};
 use actix_web_prom::{PrometheusMetrics, PrometheusMetricsBuilder};
 
 use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 use std::env;
 use std::fs;
@@ -131,6 +132,10 @@ async fn main() -> std::io::Result<()> {
             .route(
                 "/station/{id}/approve",
                 web::post().to(routes::station::station_approve),
+            )
+            .service(
+                SwaggerUi::new("/swagger-ui/{_:.*}")
+                    .url("/api-doc/openapi.json", routes::ApiDoc::openapi()),
             )
     })
     .bind((host, port))?
