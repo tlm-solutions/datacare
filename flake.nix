@@ -1,14 +1,14 @@
 {
   inputs = {
-    nixpkgs.url = github:NixOS/nixpkgs/nixos-unstable;
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     naersk = {
-      url = github:nix-community/naersk;
+      url = "github:nix-community/naersk";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     utils = {
-      url = github:numtide/flake-utils;
+      url = "github:numtide/flake-utils";
     };
   };
 
@@ -38,6 +38,12 @@
         inherit (self.packages.${prev.system})
           datacare;
       };
+      nixosModules = rec {
+        default = datacare;
+        datacare = import ./nixos-module;
+      };
+
+
       hydraJobs =
         let
           hydraSystems = [
