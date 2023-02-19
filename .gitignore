@@ -3,3 +3,5 @@ result
 # direnv
 .envrc
 .direnv
+# temporary stuff
+/.tmp
