@@ -1,5 +1,5 @@
 use crate::{
-    routes::{auth::fetch_user, ServerError},
+    routes::{auth::fetch_user, ListRequest, ListResponse, ServerError},
     DbPool,
 };
 use tlms::management::user::{hash_password, Role, User};
@@ -361,8 +361,9 @@ pub async fn user_info(
 pub async fn user_list(
     pool: web::Data<DbPool>,
     identity: Identity,
+    request: web::Either<web::Json<ListRequest>, web::Form<ListRequest>>,
     _req: HttpRequest,
-) -> Result<web::Json<Vec<User>>, ServerError> {
+) -> Result<web::Json<ListResponse<User>>, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,
         Err(e) => {
@@ -377,11 +378,30 @@ pub async fn user_list(
         return Err(ServerError::Unauthorized);
     }
 
-    // fetching interesting user
-    let users_list = match users.load::<User>(&mut database_connection) {
-        Ok(found_user) => found_user,
-        Err(_) => return Err(ServerError::BadClientData),
+    // gets the query parameters out of the request
+    let query_params: ListRequest = match request {
+        web::Either::Left(json) => json.into_inner(),
+        web::Either::Right(form) => form.into_inner(),
     };
 
-    Ok(web::Json(users_list))
+    let count: i64 = match users.count().get_result(&mut database_connection) {
+        Ok(result) => result,
+        Err(e) => {
+            error!("database error {:?}", e);
+            return Err(ServerError::InternalError);
+        }
+    };
+
+    // fetching interesting user
+    match users
+        .limit(query_params.limit.unwrap_or(40))
+        .offset(query_params.offset.unwrap_or(0))
+        .load::<User>(&mut database_connection)
+    {
+        Ok(user_list) => Ok(web::Json(ListResponse {
+            count,
+            elements: user_list,
+        })),
+        Err(_) => Err(ServerError::BadClientData),
+    }
 }
