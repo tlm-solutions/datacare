@@ -11,18 +11,21 @@ use actix_web::{
 
 use derive_more::{Display, Error};
 use serde::{Deserialize, Serialize};
-use utoipa::OpenApi;
+use utoipa::{OpenApi, ToSchema};
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct IdentifierRequest {
-    pub id: i32,
+/// let the user specify offset and limit for querying the database
+#[derive(Serialize, Deserialize, ToSchema, Debug)]
+pub struct ListRequest {
+    pub offset: Option<i64>,
+    pub limit: Option<i64>,
 }
 
-#[derive(Serialize)]
-pub struct ServiceResponse {
-    success: bool,
-    message: Option<String>,
+/// returns the user how many entries were found
+#[derive(Serialize, Deserialize, ToSchema, Debug)]
+pub struct ListResponse<T> {
+    pub count: i64,
+    pub elements: Vec<T>,
 }
 
 #[derive(Debug, Display, Error)]
@@ -83,6 +86,9 @@ pub struct DeactivateRequest {
         station::station_approve
     ),
     components(schemas(
+        ListRequest,
+        ListResponse<tlms::management::Region>,
+        ListResponse<tlms::management::Station>,
         auth::LoginRequest,
         user::RegisterUserRequest,
         user::ModifyUserRequest,

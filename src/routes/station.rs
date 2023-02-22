@@ -1,4 +1,8 @@
-use crate::{routes::auth::fetch_user, routes::ServerError, DbPool};
+use crate::{
+    routes::auth::fetch_user,
+    routes::{ListRequest, ListResponse, ServerError},
+    DbPool,
+};
 use tlms::management::{Region, Station};
 use tlms::schema::stations::dsl::stations;
 
@@ -167,8 +171,9 @@ pub async fn station_create(
 pub async fn station_list(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
+    request: web::Either<web::Json<ListRequest>, web::Form<ListRequest>>,
     unpacked_identity: Option<Identity>,
-) -> Result<web::Json<Vec<Station>>, ServerError> {
+) -> Result<web::Json<ListResponse<Station>>, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,
         Err(e) => {
@@ -179,6 +184,12 @@ pub async fn station_list(
 
     use tlms::schema::stations::{owner, public};
 
+    // gets the query parameters out of the request
+    let query_params: ListRequest = match request {
+        web::Either::Left(json) => json.into_inner(),
+        web::Either::Right(form) => form.into_inner(),
+    };
+
     match unpacked_identity {
         Some(identity) => {
             // get currently logged in user
@@ -186,8 +197,24 @@ pub async fn station_list(
 
             if user_session.is_admin() {
                 // admin users get all stations
-                match stations.load::<Station>(&mut database_connection) {
-                    Ok(station_list) => Ok(web::Json(station_list)),
+
+                let count: i64 = match stations.count().get_result(&mut database_connection) {
+                    Ok(result) => result,
+                    Err(e) => {
+                        error!("database error {:?}", e);
+                        return Err(ServerError::InternalError);
+                    }
+                };
+
+                match stations
+                    .limit(query_params.limit.unwrap_or(40))
+                    .offset(query_params.offset.unwrap_or(0))
+                    .load::<Station>(&mut database_connection)
+                {
+                    Ok(station_list) => Ok(web::Json(ListResponse {
+                        count,
+                        elements: station_list,
+                    })),
                     Err(e) => {
                         error!("error while querying database for stations {:?}", e);
                         Err(ServerError::BadClientData)
@@ -195,11 +222,29 @@ pub async fn station_list(
                 }
             } else {
                 // unprivileged session only gets public ones and their own
+
+                let count: i64 = match stations
+                    .filter(public.eq(true).or(owner.eq(user_session.id)))
+                    .count()
+                    .get_result(&mut database_connection)
+                {
+                    Ok(result) => result,
+                    Err(e) => {
+                        error!("database error {:?}", e);
+                        return Err(ServerError::InternalError);
+                    }
+                };
+
                 match stations
                     .filter(public.eq(true).or(owner.eq(user_session.id)))
+                    .limit(query_params.limit.unwrap_or(40))
+                    .offset(query_params.offset.unwrap_or(0))
                     .load::<Station>(&mut database_connection)
                 {
-                    Ok(all_station) => Ok(web::Json(all_station)),
+                    Ok(all_station) => Ok(web::Json(ListResponse {
+                        count,
+                        elements: all_station,
+                    })),
                     Err(e) => {
                         error!("error while fetching the config {:?}", e);
                         Err(ServerError::InternalError)
@@ -208,12 +253,30 @@ pub async fn station_list(
             }
         }
         None => {
-            // no session returns only public stations
+            // no session returns only public station
+
+            let count: i64 = match stations
+                .filter(public.eq(true))
+                .count()
+                .get_result(&mut database_connection)
+            {
+                Ok(result) => result,
+                Err(e) => {
+                    error!("database error {:?}", e);
+                    return Err(ServerError::InternalError);
+                }
+            };
+
             match stations
                 .filter(public.eq(true))
+                .limit(query_params.limit.unwrap_or(40))
+                .offset(query_params.offset.unwrap_or(0))
                 .load::<Station>(&mut database_connection)
             {
-                Ok(all_station) => Ok(web::Json(all_station)),
+                Ok(all_station) => Ok(web::Json(ListResponse {
+                    count,
+                    elements: all_station,
+                })),
                 Err(e) => {
                     error!("error while fetching the config {:?}", e);
                     Err(ServerError::InternalError)

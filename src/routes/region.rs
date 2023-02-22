@@ -1,4 +1,7 @@
-use crate::{routes::auth::fetch_user, routes::ServerError, DbPool};
+use crate::{
+    routes::auth::fetch_user, routes::ListRequest, routes::ListResponse, routes::ServerError,
+    DbPool,
+};
 use tlms::management::{InsertRegion, Region, Station};
 use tlms::schema::regions::dsl::regions;
 
@@ -120,7 +123,8 @@ pub async fn region_create(
 pub async fn region_list(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
-) -> Result<web::Json<Vec<Region>>, ServerError> {
+    request: web::Either<web::Json<ListRequest>, web::Form<ListRequest>>,
+) -> Result<web::Json<ListResponse<Region>>, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,
         Err(e) => {
@@ -129,9 +133,30 @@ pub async fn region_list(
         }
     };
 
+    // gets the query parameters out of the request
+    let query_params: ListRequest = match request {
+        web::Either::Left(json) => json.into_inner(),
+        web::Either::Right(form) => form.into_inner(),
+    };
+
+    let count: i64 = match regions.count().get_result(&mut database_connection) {
+        Ok(result) => result,
+        Err(e) => {
+            error!("database error {:?}", e);
+            return Err(ServerError::InternalError);
+        }
+    };
+
     // just SELECT * FROM regions;
-    match regions.load::<Region>(&mut database_connection) {
-        Ok(region_list) => Ok(web::Json(region_list)),
+    match regions
+        .limit(query_params.limit.unwrap_or(40))
+        .offset(query_params.offset.unwrap_or(0))
+        .load::<Region>(&mut database_connection)
+    {
+        Ok(region_list) => Ok(web::Json(ListResponse {
+            count,
+            elements: region_list,
+        })),
         Err(_) => Err(ServerError::BadClientData),
     }
 }
