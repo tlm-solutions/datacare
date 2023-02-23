@@ -367,7 +367,7 @@ pub async fn user_info(
 pub async fn user_list(
     pool: web::Data<DbPool>,
     identity: Identity,
-    optional_params: Option<web::Either<web::Json<ListRequest>, web::Form<ListRequest>>>,
+    optional_params: Option<web::Form<ListRequest>>,
     _req: HttpRequest,
 ) -> Result<web::Json<ListResponse<User>>, ServerError> {
     let mut database_connection = match pool.get() {
@@ -386,10 +386,7 @@ pub async fn user_list(
 
     // gets the query parameters out of the request
     let query_params: ListRequest = match optional_params {
-        Some(request) => match request {
-            web::Either::Left(json) => json.into_inner(),
-            web::Either::Right(form) => form.into_inner(),
-        },
+        Some(request) => request.into_inner(),
         None => ListRequest::default(),
     };
 

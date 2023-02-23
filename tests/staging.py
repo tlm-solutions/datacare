@@ -42,7 +42,7 @@ station_update_form = {"name": "new_station_name", "lat": 54.0, "lon": 54.0, "pu
 # requests_log.setLevel(logging.DEBUG)
 # requests_log.propagate = True
 
-print_config = "all"
+print_config = "minimal"
 
 
 def handle_response(response, print_body=False):
@@ -65,9 +65,9 @@ def test_region(s: requests.Session):
     handle_response(create_region)
     region_id = json.loads(create_region.content)["id"]
 
-    list_region = s.get(HOST + "/region")
+    list_region = s.get(HOST + "/region&offset=3&limit=3")
     handle_response(list_region, print_body = True)
-    random_id = json.loads(list_region.content)[0]["id"]
+    random_id = json.loads(list_region.content)["elements"][0]["id"]
 
     handle_response(s.get(HOST + "/region/{}".format(0)))
     handle_response(s.put(HOST + "/region/{}".format(region_id), json=edit_region_form))
