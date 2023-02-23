@@ -402,6 +402,7 @@ pub async fn user_list(
     match users
         .limit(query_params.limit)
         .offset(query_params.offset)
+        .order(tlms::schema::users::name)
         .load::<User>(&mut database_connection)
     {
         Ok(user_list) => Ok(web::Json(ListResponse {

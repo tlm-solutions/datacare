@@ -151,6 +151,7 @@ pub async fn region_list(
     match regions
         .limit(query_params.limit)
         .offset(query_params.offset)
+        .order(tlms::schema::regions::name)
         .load::<Region>(&mut database_connection)
     {
         Ok(region_list) => Ok(web::Json(ListResponse {

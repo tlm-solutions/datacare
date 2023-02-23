@@ -209,6 +209,7 @@ pub async fn station_list(
                 match stations
                     .limit(query_params.limit)
                     .offset(query_params.offset)
+                    .order(tlms::schema::stations::name)
                     .load::<Station>(&mut database_connection)
                 {
                     Ok(station_list) => Ok(web::Json(ListResponse {
@@ -239,6 +240,7 @@ pub async fn station_list(
                     .filter(public.eq(true).or(owner.eq(user_session.id)))
                     .limit(query_params.limit)
                     .offset(query_params.offset)
+                    .order(tlms::schema::stations::name)
                     .load::<Station>(&mut database_connection)
                 {
                     Ok(all_station) => Ok(web::Json(ListResponse {
@@ -271,6 +273,7 @@ pub async fn station_list(
                 .filter(public.eq(true))
                 .limit(query_params.limit)
                 .offset(query_params.offset)
+                .order(tlms::schema::stations::name)
                 .load::<Station>(&mut database_connection)
             {
                 Ok(all_station) => Ok(web::Json(ListResponse {
