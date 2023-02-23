@@ -65,7 +65,7 @@ def test_region(s: requests.Session):
     handle_response(create_region)
     region_id = json.loads(create_region.content)["id"]
 
-    list_region = s.get(HOST + "/region&offset=3&limit=3")
+    list_region = s.get(HOST + "/region", params = {"limit": 3, "offset": 3})
     handle_response(list_region, print_body = True)
     random_id = json.loads(list_region.content)["elements"][0]["id"]
 

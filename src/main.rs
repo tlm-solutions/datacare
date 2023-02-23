@@ -10,6 +10,7 @@ use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::PgConnection;
 
+use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
 use actix_session::storage::RedisActorSessionStore;
 use actix_session::SessionMiddleware;
@@ -87,7 +88,13 @@ async fn main() -> std::io::Result<()> {
     let prometheus = get_prometheus();
 
     HttpServer::new(move || {
+        let cors = Cors::default()
+            .allow_any_header()
+            .allow_any_method()
+            .allow_any_origin();
+
         App::new()
+            .wrap(cors)
             .wrap(prometheus.clone())
             .wrap(IdentityMiddleware::default())
             .wrap(Logger::default())
