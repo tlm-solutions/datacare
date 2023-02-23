@@ -254,7 +254,10 @@ pub async fn user_update(
         .first::<User>(&mut database_connection)
     {
         Ok(found_user) => found_user,
-        Err(_) => return Err(ServerError::BadClientData),
+        Err(e) => {
+            error!("database error while updating user {:?}", e);
+            return Err(ServerError::BadClientData);
+        }
     };
 
     let session_user = fetch_user(identity, &mut database_connection)?;
@@ -342,7 +345,10 @@ pub async fn user_info(
         .first::<User>(&mut database_connection)
     {
         Ok(found_user) => found_user,
-        Err(_) => return Err(ServerError::BadClientData),
+        Err(e) => {
+            error!("while fetching user from database {:?}", e);
+            return Err(ServerError::BadClientData);
+        }
     };
 
     Ok(web::Json(user))
@@ -361,7 +367,7 @@ pub async fn user_info(
 pub async fn user_list(
     pool: web::Data<DbPool>,
     identity: Identity,
-    request: web::Either<web::Json<ListRequest>, web::Form<ListRequest>>,
+    optional_params: Option<web::Either<web::Json<ListRequest>, web::Form<ListRequest>>>,
     _req: HttpRequest,
 ) -> Result<web::Json<ListResponse<User>>, ServerError> {
     let mut database_connection = match pool.get() {
@@ -379,29 +385,35 @@ pub async fn user_list(
     }
 
     // gets the query parameters out of the request
-    let query_params: ListRequest = match request {
-        web::Either::Left(json) => json.into_inner(),
-        web::Either::Right(form) => form.into_inner(),
+    let query_params: ListRequest = match optional_params {
+        Some(request) => match request {
+            web::Either::Left(json) => json.into_inner(),
+            web::Either::Right(form) => form.into_inner(),
+        },
+        None => ListRequest::default(),
     };
 
     let count: i64 = match users.count().get_result(&mut database_connection) {
         Ok(result) => result,
         Err(e) => {
-            error!("database error {:?}", e);
+            error!("database error while counting users {:?}", e);
             return Err(ServerError::InternalError);
         }
     };
 
     // fetching interesting user
     match users
-        .limit(query_params.limit.unwrap_or(40))
-        .offset(query_params.offset.unwrap_or(0))
+        .limit(query_params.limit)
+        .offset(query_params.offset)
         .load::<User>(&mut database_connection)
     {
         Ok(user_list) => Ok(web::Json(ListResponse {
             count,
             elements: user_list,
         })),
-        Err(_) => Err(ServerError::BadClientData),
+        Err(e) => {
+            error!("error while listing users {:?}", e);
+            Err(ServerError::BadClientData)
+        }
     }
 }
