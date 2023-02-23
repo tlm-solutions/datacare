@@ -171,7 +171,7 @@ pub async fn station_create(
 pub async fn station_list(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
-    request: web::Either<web::Json<ListRequest>, web::Form<ListRequest>>,
+    optional_params: Option<web::Either<web::Json<ListRequest>, web::Form<ListRequest>>>,
     unpacked_identity: Option<Identity>,
 ) -> Result<web::Json<ListResponse<Station>>, ServerError> {
     let mut database_connection = match pool.get() {
@@ -185,9 +185,12 @@ pub async fn station_list(
     use tlms::schema::stations::{owner, public};
 
     // gets the query parameters out of the request
-    let query_params: ListRequest = match request {
-        web::Either::Left(json) => json.into_inner(),
-        web::Either::Right(form) => form.into_inner(),
+    let query_params: ListRequest = match optional_params {
+        Some(request) => match request {
+            web::Either::Left(json) => json.into_inner(),
+            web::Either::Right(form) => form.into_inner(),
+        },
+        None => ListRequest::default(),
     };
 
     match unpacked_identity {
@@ -207,8 +210,8 @@ pub async fn station_list(
                 };
 
                 match stations
-                    .limit(query_params.limit.unwrap_or(40))
-                    .offset(query_params.offset.unwrap_or(0))
+                    .limit(query_params.limit)
+                    .offset(query_params.offset)
                     .load::<Station>(&mut database_connection)
                 {
                     Ok(station_list) => Ok(web::Json(ListResponse {
@@ -237,8 +240,8 @@ pub async fn station_list(
 
                 match stations
                     .filter(public.eq(true).or(owner.eq(user_session.id)))
-                    .limit(query_params.limit.unwrap_or(40))
-                    .offset(query_params.offset.unwrap_or(0))
+                    .limit(query_params.limit)
+                    .offset(query_params.offset)
                     .load::<Station>(&mut database_connection)
                 {
                     Ok(all_station) => Ok(web::Json(ListResponse {
@@ -269,8 +272,8 @@ pub async fn station_list(
 
             match stations
                 .filter(public.eq(true))
-                .limit(query_params.limit.unwrap_or(40))
-                .offset(query_params.offset.unwrap_or(0))
+                .limit(query_params.limit)
+                .offset(query_params.offset)
                 .load::<Station>(&mut database_connection)
             {
                 Ok(all_station) => Ok(web::Json(ListResponse {

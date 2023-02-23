@@ -7,16 +7,16 @@ import random
 import string
 
 HOST = "http://localhost:8070"
-
+HOST = "https://datacare.staging.dvb.solutions"
 
 def get_random_string(length):
     letters = string.ascii_lowercase
     return "".join(random.choice(letters) for i in range(length))
 
 
-register_form = {"name": "test", "email": "test@example.com", "password": "testtesttest"}
+register_form = {"name": get_random_string(8), "email": get_random_string(8) + "@example.com", "password": "testtesttest"}
 
-login_form = {"email": "test@example.com", "password": "testtesttest"}
+login_form = {"email": "test@test.com", "password": "test"}
 
 update_form = {
     "id": "fill_me",
@@ -65,8 +65,8 @@ def test_region(s: requests.Session):
     handle_response(create_region)
     region_id = json.loads(create_region.content)["id"]
 
-    list_region = s.get(HOST + "/region", print_body = True)
-    handle_response(list_region)
+    list_region = s.get(HOST + "/region")
+    handle_response(list_region, print_body = True)
     random_id = json.loads(list_region.content)[0]["id"]
 
     handle_response(s.get(HOST + "/region/{}".format(0)))

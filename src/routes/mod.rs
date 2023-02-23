@@ -14,11 +14,14 @@ use serde::{Deserialize, Serialize};
 use utoipa::{OpenApi, ToSchema};
 use uuid::Uuid;
 
+const DEFAULT_OFFSET: i64 = 0;
+const DEFAULT_LIMIT: i64 = 30;
+
 /// let the user specify offset and limit for querying the database
 #[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub struct ListRequest {
-    pub offset: Option<i64>,
-    pub limit: Option<i64>,
+    pub offset: i64,
+    pub limit: i64,
 }
 
 /// returns the user how many entries were found
@@ -38,6 +41,15 @@ pub enum ServerError {
 
     #[display(fmt = "unauthorized")]
     Unauthorized,
+}
+
+impl Default for ListRequest {
+    fn default() -> Self {
+        ListRequest {
+            offset: DEFAULT_OFFSET,
+            limit: DEFAULT_LIMIT,
+        }
+    }
 }
 
 impl error::ResponseError for ServerError {

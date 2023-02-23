@@ -7,7 +7,7 @@ Server which handels users, regions and stations. This service is the main point
 ## Building
 
 ```bash
-    $ nix build
+    $ nix build -L
 ```
 
 ## Configuration
