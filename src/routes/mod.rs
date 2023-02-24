@@ -1,8 +1,8 @@
 pub mod auth;
 pub mod region;
 pub mod station;
-pub mod user;
 pub mod trekkie_runs;
+pub mod user;
 
 use actix_web::{
     error,
@@ -104,7 +104,9 @@ pub struct DeactivateRequest {
         station::station_info,
         station::station_update,
         station::station_delete,
-        station::station_approve
+        station::station_approve,
+        trekkie_runs::trekkie_run_list,
+        trekkie_runs::trekkie_run_update
     ),
     components(schemas(
         Stats,
@@ -125,7 +127,8 @@ pub struct DeactivateRequest {
         station::UpdateStationRequest,
         station::SearchStationRequest,
         station::ForceDeleteRequest,
-        station::ApproveStationRequest
+        station::ApproveStationRequest,
+        trekkie_runs::EditTrekkieRuns
     ))
 )]
 pub struct ApiDoc;

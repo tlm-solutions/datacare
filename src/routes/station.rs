@@ -1,6 +1,6 @@
 use crate::{
     routes::auth::fetch_user,
-    routes::{Stats, ListRequest, ListResponse, ServerError},
+    routes::{ListRequest, ListResponse, ServerError, Stats},
     DbPool,
 };
 use tlms::management::{Region, Station};
@@ -474,10 +474,10 @@ pub async fn station_info(
             return Err(ServerError::InternalError);
         }
     };
-    
+
     // TODO: optimize
     // counts telegram from this regions over different time intervals
-    
+
     /*let telegram_count_last_day = match r09_telegrams
         .filter(telegram_station.eq(&relevant_station.id))
         .filter(time.lt(now - 1_i32.days()))
@@ -524,11 +524,8 @@ pub async fn station_info(
     let stats = Stats {
         telegram_count: 100213231,
         last_day_receive_rate: 81322.512,
-        last_month_receive_rate: 123212.231
+        last_month_receive_rate: 123212.231,
     };
-
-
-
 
     match wrapped_identity {
         Some(identity) => {
@@ -538,10 +535,10 @@ pub async fn station_info(
             if user_session.is_admin()
                 || relevant_station.owner == user_session.id
                 || relevant_station.public
-            {   
+            {
                 Ok(web::Json(StationInfoResponse {
                     station: relevant_station,
-                    stats
+                    stats,
                 }))
             } else {
                 Err(ServerError::Unauthorized)
@@ -551,7 +548,7 @@ pub async fn station_info(
             if relevant_station.public {
                 Ok(web::Json(StationInfoResponse {
                     station: relevant_station,
-                    stats
+                    stats,
                 }))
             } else {
                 Err(ServerError::Unauthorized)

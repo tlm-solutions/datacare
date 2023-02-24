@@ -3,18 +3,18 @@ use crate::{
     routes::{ListRequest, ListResponse, ServerError},
     DbPool,
 };
-use tlms::trekkie::TrekkieRun;
 use tlms::schema::trekkie_runs::dsl::trekkie_runs;
+use tlms::trekkie::TrekkieRun;
 
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest};
 use diesel::query_dsl::RunQueryDsl;
 use diesel::{ExpressionMethods, QueryDsl};
 
+use chrono::NaiveDateTime;
 use log::{error, warn};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use chrono::NaiveDateTime;
 use uuid::Uuid;
 
 /// edits a region
@@ -72,7 +72,7 @@ pub async fn trekkie_run_list(
     {
         Ok(trekkie_list) => Ok(web::Json(ListResponse {
             count,
-            elements: trekkie_list
+            elements: trekkie_list,
         })),
         Err(e) => {
             error!("database error while listing trekkie_runs {:?}", e);
@@ -115,9 +115,7 @@ pub async fn trekkie_run_update(
 
     warn!("updating trekkie runs {:?}", &request);
 
-    use tlms::schema::trekkie_runs::{
-        id as trekkie_id,  start_time, end_time, line, run
-    };
+    use tlms::schema::trekkie_runs::{end_time, id as trekkie_id, line, run, start_time};
 
     match diesel::update(trekkie_runs.filter(trekkie_id.eq(path.0)))
         .set((
@@ -135,4 +133,3 @@ pub async fn trekkie_run_update(
         }
     }
 }
-
