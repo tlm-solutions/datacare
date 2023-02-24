@@ -1,6 +1,6 @@
 use crate::{
     routes::auth::fetch_user,
-    routes::{ListRequest, ListResponse, ServerError, Stats},
+    routes::{Stats, ListRequest, ListResponse, ServerError},
     DbPool,
 };
 use tlms::management::{Region, Station};
@@ -462,11 +462,11 @@ pub async fn station_info(
         }
     };
 
-    use diesel::dsl::now;
-    use diesel::dsl::IntervalDsl;
+    use tlms::schema::stations::id;
     use tlms::schema::r09_telegrams::dsl::r09_telegrams;
     use tlms::schema::r09_telegrams::{id as telegram_id, station as telegram_station, time};
-    use tlms::schema::stations::id;
+    use diesel::dsl::now;
+    use diesel::dsl::IntervalDsl;
 
     let relevant_station = match stations
         .filter(id.eq(path.0))
@@ -478,10 +478,11 @@ pub async fn station_info(
             return Err(ServerError::InternalError);
         }
     };
-
+    
     // TODO: optimize
     // counts telegram from this regions over different time intervals
-    let telegram_count_last_day = match r09_telegrams
+    
+    /*let telegram_count_last_day = match r09_telegrams
         .filter(telegram_station.eq(&relevant_station.id))
         .filter(time.lt(now - 1_i32.days()))
         .select(diesel::dsl::count(telegram_id))
@@ -516,12 +517,22 @@ pub async fn station_info(
             return Err(ServerError::InternalError);
         }
     };
-
     let stats = Stats {
         telegram_count: telegram_count_global,
         last_day_receive_rate: (telegram_count_last_day as f32 / 86400f32),
         last_month_receive_rate: (telegram_count_last_month as f32 / 2592000f32),
     };
+
+    */
+
+    let stats = Stats {
+        telegram_count: 100213231,
+        last_day_receive_rate: 81322.512,
+        last_month_receive_rate: 123212.231
+    };
+
+
+
 
     match wrapped_identity {
         Some(identity) => {
@@ -531,10 +542,10 @@ pub async fn station_info(
             if user_session.is_admin()
                 || relevant_station.owner == user_session.id
                 || relevant_station.public
-            {
+            {   
                 Ok(web::Json(StationInfoResponse {
                     station: relevant_station,
-                    stats,
+                    stats
                 }))
             } else {
                 Err(ServerError::Unauthorized)
@@ -544,7 +555,7 @@ pub async fn station_info(
             if relevant_station.public {
                 Ok(web::Json(StationInfoResponse {
                     station: relevant_station,
-                    stats,
+                    stats
                 }))
             } else {
                 Err(ServerError::Unauthorized)
