@@ -838,6 +838,7 @@ dependencies = [
  "actix-session",
  "actix-web",
  "actix-web-prom",
+ "chrono",
  "clap",
  "derive_more",
  "diesel",

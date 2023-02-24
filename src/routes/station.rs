@@ -463,10 +463,6 @@ pub async fn station_info(
     };
 
     use tlms::schema::stations::id;
-    use tlms::schema::r09_telegrams::dsl::r09_telegrams;
-    use tlms::schema::r09_telegrams::{id as telegram_id, station as telegram_station, time};
-    use diesel::dsl::now;
-    use diesel::dsl::IntervalDsl;
 
     let relevant_station = match stations
         .filter(id.eq(path.0))

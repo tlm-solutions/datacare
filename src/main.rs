@@ -140,6 +140,14 @@ async fn main() -> std::io::Result<()> {
                 "/station/{id}/approve",
                 web::post().to(routes::station::station_approve),
             )
+            .route(
+                "/trekkie",
+                web::get().to(routes::trekkie_runs::trekkie_run_list),
+            )
+            .route(
+                "/trekkie/{id}",
+                web::put().to(routes::trekkie_runs::trekkie_run_update),
+            )
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")
                     .url("/api-doc/openapi.json", routes::ApiDoc::openapi()),

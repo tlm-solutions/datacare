@@ -4,7 +4,7 @@ version = "0.2.0"
 edition = "2021"
 
 [dependencies]
-tlms = { version = "0.7", git = "https://github.com/tlm-solutions/tlms.rs", features = ["management", "telegrams"]}
+tlms = { version = "0.7", git = "https://github.com/tlm-solutions/tlms.rs", features = ["management", "telegrams", "trekkie"]}
 clap = { version = "4", features = ["derive"] }
 
 actix-web = "4"
@@ -31,3 +31,4 @@ utoipa = { version = "3", features = ["actix_extras"] }
 utoipa-swagger-ui = { version = "3", features = ["actix-web"] }
 regex = "1"
 derive_more = "0"
+chrono = "*"

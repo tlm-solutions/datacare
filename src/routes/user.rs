@@ -71,6 +71,13 @@ pub struct CreateUserResponse {
     pub deactivated: bool,
 }
 
+
+#[derive(Deserialize, Serialize, ToSchema, Debug)]
+pub struct UserInfoResponse {
+    #[serde(flatten)]
+    pub user: User
+}
+
 /// This endpoint if registrating a new users
 /// it needs a valid email address a user name and password which is at least 8
 /// characters long

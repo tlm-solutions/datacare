@@ -2,6 +2,7 @@ pub mod auth;
 pub mod region;
 pub mod station;
 pub mod user;
+pub mod trekkie_runs;
 
 use actix_web::{
     error,
