@@ -116,7 +116,7 @@ pub struct DeactivateRequest {
         station::UpdateStationRequest,
         station::SearchStationRequest,
         station::ForceDeleteRequest,
-        station::ApproveStationRequest
+        station::ApproveStationRequest,
     ))
 )]
 pub struct ApiDoc;

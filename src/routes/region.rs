@@ -65,7 +65,7 @@ pub struct RegionInfoStruct {
     post,
     path = "/region",
     responses(
-        (status = 200, description = "region was successfully created", body = crate::routes::RegionCreationResponse),
+        (status = 200, description = "region was successfully created", body = RegionCreationResponse),
         (status = 500, description = "postgres pool error"),
     ),
 )]
