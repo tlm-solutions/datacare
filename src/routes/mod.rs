@@ -31,6 +31,14 @@ pub struct ListResponse<T> {
     pub elements: Vec<T>,
 }
 
+/// Stats about the regions
+#[derive(Serialize, Deserialize, ToSchema, Debug)]
+pub struct Stats {
+    pub telegram_count: i64,
+    pub last_day_receive_rate: f32,
+    pub last_month_receive_rate: f32,
+}
+
 #[derive(Debug, Display, Error)]
 pub enum ServerError {
     #[display(fmt = "internal error")]
@@ -98,6 +106,7 @@ pub struct DeactivateRequest {
         station::station_approve
     ),
     components(schemas(
+        Stats,
         ListRequest,
         ListResponse<tlms::management::Region>,
         ListResponse<tlms::management::Station>,
@@ -110,7 +119,6 @@ pub struct DeactivateRequest {
         region::RegionCreationResponse,
         region::CreateRegionRequest,
         region::EditRegionRequest,
-        region::Stats,
         region::RegionInfoStruct,
         station::CreateStationRequest,
         station::UpdateStationRequest,

@@ -1,5 +1,6 @@
 use crate::{
-    routes::auth::fetch_user, routes::ListRequest, routes::ListResponse, routes::ServerError,
+    routes::auth::fetch_user,
+    routes::{ListRequest, ListResponse, ServerError, Stats},
     DbPool,
 };
 use tlms::management::{InsertRegion, Region, Station};
@@ -44,18 +45,12 @@ pub struct EditRegionRequest {
     pub encoding: Option<i32>,
 }
 
-/// Stats about the regions
-#[derive(Serialize, Deserialize, ToSchema, Debug)]
-pub struct Stats {
-    pub telegram_count: i64,
-    pub last_day_receive_rate: f32,
-    pub last_month_receive_rate: f32,
-}
-
 /// returns a lot more detailled information
 #[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub struct RegionInfoStruct {
+    #[serde(flatten)]
     pub region: Region,
+    #[serde(flatten)]
     pub stats: Stats,
     pub stations: Vec<Station>,
 }

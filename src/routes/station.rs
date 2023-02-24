@@ -1,6 +1,6 @@
 use crate::{
     routes::auth::fetch_user,
-    routes::{ListRequest, ListResponse, ServerError},
+    routes::{ListRequest, ListResponse, ServerError, Stats},
     DbPool,
 };
 use tlms::management::{Region, Station};
@@ -69,6 +69,16 @@ pub struct ForceDeleteRequest {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct ApproveStationRequest {
     pub approve: bool,
+}
+
+/// containes the value for approved that should be set
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct StationInfoResponse {
+    #[serde(flatten)]
+    pub station: Station,
+
+    #[serde(flatten)]
+    pub stats: Stats,
 }
 
 /// will create a station with the owner of the currently authenticated user
@@ -443,7 +453,7 @@ pub async fn station_info(
     _req: HttpRequest,
     wrapped_identity: Option<Identity>,
     path: web::Path<(Uuid,)>,
-) -> Result<web::Json<Station>, ServerError> {
+) -> Result<web::Json<StationInfoResponse>, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,
         Err(e) => {
@@ -452,6 +462,10 @@ pub async fn station_info(
         }
     };
 
+    use diesel::dsl::now;
+    use diesel::dsl::IntervalDsl;
+    use tlms::schema::r09_telegrams::dsl::r09_telegrams;
+    use tlms::schema::r09_telegrams::{id as telegram_id, station as telegram_station, time};
     use tlms::schema::stations::id;
 
     let relevant_station = match stations
@@ -465,6 +479,50 @@ pub async fn station_info(
         }
     };
 
+    // TODO: optimize
+    // counts telegram from this regions over different time intervals
+    let telegram_count_last_day = match r09_telegrams
+        .filter(telegram_station.eq(&relevant_station.id))
+        .filter(time.lt(now - 1_i32.days()))
+        .select(diesel::dsl::count(telegram_id))
+        .first::<i64>(&mut database_connection)
+    {
+        Ok(telegram_count) => telegram_count,
+        Err(e) => {
+            error!("error while fetching the config {:?}", e);
+            return Err(ServerError::InternalError);
+        }
+    };
+    let telegram_count_last_month = match r09_telegrams
+        .filter(telegram_station.eq(&relevant_station.id))
+        .filter(time.lt(now - 30_i32.days()))
+        .select(diesel::dsl::count(telegram_id))
+        .first::<i64>(&mut database_connection)
+    {
+        Ok(telegram_count) => telegram_count,
+        Err(e) => {
+            error!("error while fetching the config {:?}", e);
+            return Err(ServerError::InternalError);
+        }
+    };
+    let telegram_count_global = match r09_telegrams
+        .filter(telegram_station.eq(&relevant_station.id))
+        .select(diesel::dsl::count(telegram_id))
+        .first::<i64>(&mut database_connection)
+    {
+        Ok(telegram_count) => telegram_count,
+        Err(e) => {
+            error!("error while fetching the config {:?}", e);
+            return Err(ServerError::InternalError);
+        }
+    };
+
+    let stats = Stats {
+        telegram_count: telegram_count_global,
+        last_day_receive_rate: (telegram_count_last_day as f32 / 86400f32),
+        last_month_receive_rate: (telegram_count_last_month as f32 / 2592000f32),
+    };
+
     match wrapped_identity {
         Some(identity) => {
             // get currently logged in user
@@ -474,14 +532,20 @@ pub async fn station_info(
                 || relevant_station.owner == user_session.id
                 || relevant_station.public
             {
-                Ok(web::Json(relevant_station))
+                Ok(web::Json(StationInfoResponse {
+                    station: relevant_station,
+                    stats,
+                }))
             } else {
                 Err(ServerError::Unauthorized)
             }
         }
         None => {
             if relevant_station.public {
-                Ok(web::Json(relevant_station))
+                Ok(web::Json(StationInfoResponse {
+                    station: relevant_station,
+                    stats,
+                }))
             } else {
                 Err(ServerError::Unauthorized)
             }
