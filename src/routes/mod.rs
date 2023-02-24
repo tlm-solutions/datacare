@@ -15,7 +15,7 @@ use utoipa::{OpenApi, ToSchema};
 use uuid::Uuid;
 
 const DEFAULT_OFFSET: i64 = 0;
-const DEFAULT_LIMIT: i64 = 30;
+const DEFAULT_LIMIT: i64 = i64::MAX;
 
 /// let the user specify offset and limit for querying the database
 #[derive(Serialize, Deserialize, ToSchema, Debug)]
