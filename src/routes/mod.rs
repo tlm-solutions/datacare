@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod region;
 pub mod station;
+pub mod trekkie_runs;
 pub mod user;
 
 use actix_web::{
@@ -29,6 +30,14 @@ pub struct ListRequest {
 pub struct ListResponse<T> {
     pub count: i64,
     pub elements: Vec<T>,
+}
+
+/// Stats about the regions
+#[derive(Serialize, Deserialize, ToSchema, Debug)]
+pub struct Stats {
+    pub telegram_count: i64,
+    pub last_day_receive_rate: f32,
+    pub last_month_receive_rate: f32,
 }
 
 #[derive(Debug, Display, Error)]
@@ -95,9 +104,12 @@ pub struct DeactivateRequest {
         station::station_info,
         station::station_update,
         station::station_delete,
-        station::station_approve
+        station::station_approve,
+        trekkie_runs::trekkie_run_list,
+        trekkie_runs::trekkie_run_update
     ),
     components(schemas(
+        Stats,
         ListRequest,
         ListResponse<tlms::management::Region>,
         ListResponse<tlms::management::Station>,
@@ -110,13 +122,13 @@ pub struct DeactivateRequest {
         region::RegionCreationResponse,
         region::CreateRegionRequest,
         region::EditRegionRequest,
-        region::Stats,
         region::RegionInfoStruct,
         station::CreateStationRequest,
         station::UpdateStationRequest,
         station::SearchStationRequest,
         station::ForceDeleteRequest,
         station::ApproveStationRequest,
+        trekkie_runs::EditTrekkieRuns
     ))
 )]
 pub struct ApiDoc;
