@@ -106,7 +106,8 @@ pub struct DeactivateRequest {
         station::station_delete,
         station::station_approve,
         trekkie_runs::trekkie_run_list,
-        trekkie_runs::trekkie_run_update
+        trekkie_runs::trekkie_run_update,
+        trekkie_runs::trekkie_run_delete
     ),
     components(schemas(
         Stats,

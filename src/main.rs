@@ -148,6 +148,10 @@ async fn main() -> std::io::Result<()> {
                 "/trekkie/{id}",
                 web::put().to(routes::trekkie_runs::trekkie_run_update),
             )
+            .route(
+                "/trekkie/{id}",
+                web::delete().to(routes::trekkie_runs::trekkie_run_delete),
+            )
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")
                     .url("/api-doc/openapi.json", routes::ApiDoc::openapi()),
