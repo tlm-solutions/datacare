@@ -50,6 +50,9 @@ pub enum ServerError {
 
     #[display(fmt = "unauthorized")]
     Unauthorized,
+
+    #[display(fmt = "forbidden")]
+    Forbidden,
 }
 
 impl Default for ListRequest {
@@ -73,6 +76,7 @@ impl error::ResponseError for ServerError {
             ServerError::InternalError => StatusCode::INTERNAL_SERVER_ERROR,
             ServerError::BadClientData => StatusCode::BAD_REQUEST,
             ServerError::Unauthorized => StatusCode::UNAUTHORIZED,
+            ServerError::Forbidden => StatusCode::FORBIDDEN,
         }
     }
 }

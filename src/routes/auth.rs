@@ -120,13 +120,13 @@ pub async fn user_login(
                     admin: (Role::from(user.role) == Role::Administrator),
                 }))
             } else {
-                debug!("Password does not match");
+                debug!("passwords dont match");
                 Err(ServerError::BadClientData)
             }
         }
         Err(e) => {
-            error!("Err: {:?}", e);
-            Err(ServerError::InternalError)
+            error!("user with this email not found or postgres error: {:?}", e);
+            Err(ServerError::Unauthorized)
         }
     }
 }

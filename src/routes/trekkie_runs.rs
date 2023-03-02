@@ -118,7 +118,7 @@ pub async fn trekkie_run_update(
     let user_session = fetch_user(identity, &mut database_connection)?;
 
     if !user_session.is_admin() {
-        return Err(ServerError::Unauthorized);
+        return Err(ServerError::Forbidden);
     }
 
     warn!("updating trekkie runs {:?}", &request);
@@ -170,7 +170,7 @@ pub async fn trekkie_run_delete(
     let user_session = fetch_user(identity, &mut database_connection)?;
 
     if !user_session.is_admin() {
-        return Err(ServerError::Unauthorized);
+        return Err(ServerError::Forbidden);
     }
 
     warn!("deleting trekkie runs {:?}", &request);

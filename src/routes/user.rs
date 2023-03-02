@@ -208,7 +208,7 @@ pub async fn user_delete(
     let session_user = fetch_user(identity, &mut database_connection)?;
 
     if !session_user.is_admin() {
-        return Err(ServerError::Unauthorized);
+        return Err(ServerError::Forbidden);
     }
 
     use tlms::schema::users::{deactivated, id};
@@ -271,14 +271,14 @@ pub async fn user_update(
     // TODO: can be simplified
     // current user is admin he can do what ever he wants
     if !session_user.is_admin() {
-        // its fine if the user tries to modify him self or an administrator modifies other user
+        // its fine if the user tries to modify himself or an administrator modifies other user
         if path.0 != session_user.id {
-            return Err(ServerError::Unauthorized);
+            return Err(ServerError::Forbidden);
         }
 
         // user shouldn't be able to modify his own role
         if request.role.is_some() {
-            return Err(ServerError::Unauthorized);
+            return Err(ServerError::Forbidden);
         }
     }
 
@@ -340,7 +340,7 @@ pub async fn user_info(
     let session_user = fetch_user(identity, &mut database_connection)?;
 
     if !session_user.is_admin() && session_user.id != path.0 {
-        return Err(ServerError::Unauthorized);
+        return Err(ServerError::Forbidden);
     }
 
     use tlms::schema::users::id;
@@ -387,7 +387,7 @@ pub async fn user_list(
     let session_user = fetch_user(identity, &mut database_connection)?;
 
     if !session_user.is_admin() {
-        return Err(ServerError::Unauthorized);
+        return Err(ServerError::Forbidden);
     }
 
     // gets the query parameters out of the request

@@ -82,7 +82,7 @@ pub async fn region_create(
     let user_session = fetch_user(identity, &mut database_connection)?;
 
     if !user_session.is_admin() {
-        return Err(ServerError::Unauthorized);
+        return Err(ServerError::Forbidden);
     }
 
     match diesel::insert_into(regions)
@@ -188,7 +188,7 @@ pub async fn region_update(
     let user_session = fetch_user(identity, &mut database_connection)?;
 
     if !user_session.is_admin() {
-        return Err(ServerError::Unauthorized);
+        return Err(ServerError::Forbidden);
     }
 
     warn!("updating region {:?}", &request);
@@ -380,7 +380,7 @@ pub async fn region_delete(
     let user_session = fetch_user(identity, &mut database_connection)?;
 
     if !user_session.is_admin() {
-        return Err(ServerError::Unauthorized);
+        return Err(ServerError::Forbidden);
     }
 
     // queriering stations if we find any with that region
