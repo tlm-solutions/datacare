@@ -124,10 +124,13 @@ pub async fn user_login(
                 Err(ServerError::BadClientData)
             }
         }
-        Err(e) => {
-            error!("user with this email not found or postgres error: {:?}", e);
-            Err(ServerError::Unauthorized)
-        }
+        Err(e) => match e {
+            diesel::result::Error::NotFound => Err(ServerError::Unauthorized),
+            _ => {
+                error!("postgres error while querying user: {:?}", e);
+                Err(ServerError::InternalError)
+            }
+        },
     }
 }
 

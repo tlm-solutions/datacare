@@ -55,7 +55,7 @@ pub async fn trekkie_run_list(
     let session_user = fetch_user(identity, &mut database_connection)?;
 
     if !session_user.is_admin() {
-        return Err(ServerError::Unauthorized);
+        return Err(ServerError::Forbidden);
     }
 
     // gets the query parameters out of the request
