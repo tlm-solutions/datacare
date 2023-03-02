@@ -84,7 +84,7 @@ pub struct UserInfoResponse {
     post,
     path = "/user",
     responses(
-       (status = 200, description = "user was successfully created", body = crate::routes::UserCreation),
+       (status = 200, description = "user was successfully created", body = CreateUserResponse),
         (status = 500, description = "postgres pool error"),
         (status = 400, description = "invalid user data"),
     ),

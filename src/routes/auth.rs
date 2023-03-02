@@ -76,7 +76,7 @@ pub fn fetch_user(
     post,
     path = "/auth/login",
     responses(
-        (status = 200, description = "user was successfully authenticated", body = crate::routes::UserCreation),
+        (status = 200, description = "user was successfully authenticated", body = CreateUserResponse),
         (status = 500, description = "postgres pool error"),
         (status = 400, description = "invalid user data")
     ),

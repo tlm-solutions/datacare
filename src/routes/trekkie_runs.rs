@@ -119,10 +119,10 @@ pub async fn trekkie_run_update(
 
     match diesel::update(trekkie_runs.filter(trekkie_id.eq(path.0)))
         .set((
-            start_time.eq(request.start_time.clone()),
-            end_time.eq(request.end_time.clone()),
-            line.eq(request.line.clone()),
-            run.eq(request.run.clone()),
+            start_time.eq(request.start_time),
+            end_time.eq(request.end_time),
+            line.eq(request.line),
+            run.eq(request.run),
         ))
         .get_result::<TrekkieRun>(&mut database_connection)
     {
