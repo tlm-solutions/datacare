@@ -108,10 +108,6 @@ pub async fn station_create(
     // get currently logged in user
     let user_session = fetch_user(identity, &mut database_connection)?;
 
-    if !user_session.is_admin() {
-        return Err(ServerError::Unauthorized);
-    }
-
     // if the region doesn't exist we can directly dispose of the request
     use tlms::schema::regions::dsl::regions;
     use tlms::schema::regions::id;
@@ -344,7 +340,7 @@ pub async fn station_update(
     };
 
     if !user_session.is_admin() && user_session.id != relevant_station.owner {
-        return Err(ServerError::Unauthorized);
+        return Err(ServerError::Forbidden);
     }
 
     // updating stations
@@ -434,7 +430,7 @@ pub async fn station_delete(
             }
         }
     } else {
-        Err(ServerError::Unauthorized)
+        Err(ServerError::Forbidden)
     }
 }
 
@@ -541,7 +537,7 @@ pub async fn station_info(
                     stats,
                 }))
             } else {
-                Err(ServerError::Unauthorized)
+                Err(ServerError::Forbidden)
             }
         }
         None => {
@@ -586,7 +582,7 @@ pub async fn station_approve(
     let user_session = fetch_user(identity, &mut database_connection)?;
 
     if !user_session.is_admin() {
-        return Err(ServerError::Unauthorized);
+        return Err(ServerError::Forbidden);
     }
 
     use tlms::schema::stations::{approved, id};

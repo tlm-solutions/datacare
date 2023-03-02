@@ -7,7 +7,7 @@ use tlms::schema::trekkie_runs::dsl::trekkie_runs;
 use tlms::trekkie::TrekkieRun;
 
 use actix_identity::Identity;
-use actix_web::{web, HttpRequest};
+use actix_web::{web, HttpRequest, HttpResponse};
 use diesel::query_dsl::RunQueryDsl;
 use diesel::{ExpressionMethods, QueryDsl};
 
@@ -40,6 +40,7 @@ pub struct EditTrekkieRuns {
 pub async fn trekkie_run_list(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
+    identity: Identity,
     optional_params: Option<web::Form<ListRequest>>,
 ) -> Result<web::Json<ListResponse<TrekkieRun>>, ServerError> {
     let mut database_connection = match pool.get() {
@@ -49,6 +50,13 @@ pub async fn trekkie_run_list(
             return Err(ServerError::InternalError);
         }
     };
+
+    // fetch user session
+    let session_user = fetch_user(identity, &mut database_connection)?;
+
+    if !session_user.is_admin() {
+        return Err(ServerError::Forbidden);
+    }
 
     // gets the query parameters out of the request
     let query_params: ListRequest = match optional_params {
@@ -110,7 +118,7 @@ pub async fn trekkie_run_update(
     let user_session = fetch_user(identity, &mut database_connection)?;
 
     if !user_session.is_admin() {
-        return Err(ServerError::Unauthorized);
+        return Err(ServerError::Forbidden);
     }
 
     warn!("updating trekkie runs {:?}", &request);
@@ -129,6 +137,52 @@ pub async fn trekkie_run_update(
         Ok(return_trekkie_run) => Ok(web::Json(return_trekkie_run)),
         Err(e) => {
             error!("cannot update trekkie run because of {:?}", e);
+            Err(ServerError::InternalError)
+        }
+    }
+}
+
+/// Will delete requested trekkie run
+#[utoipa::path(
+    delete,
+    path = "/trekkie/{id}",
+    responses(
+        (status = 200, description = "successfully deleted trekkie run"),
+        (status = 400, description = "invalid input data"),
+        (status = 500, description = "postgres pool error"),
+    ),
+)]
+pub async fn trekkie_run_delete(
+    pool: web::Data<DbPool>,
+    _req: HttpRequest,
+    identity: Identity,
+    path: web::Path<(i64,)>,
+    request: web::Json<EditTrekkieRuns>,
+) -> Result<HttpResponse, ServerError> {
+    let mut database_connection = match pool.get() {
+        Ok(conn) => conn,
+        Err(e) => {
+            error!("cannot get connection from connection pool {:?}", e);
+            return Err(ServerError::InternalError);
+        }
+    };
+
+    let user_session = fetch_user(identity, &mut database_connection)?;
+
+    if !user_session.is_admin() {
+        return Err(ServerError::Forbidden);
+    }
+
+    warn!("deleting trekkie runs {:?}", &request);
+
+    use tlms::schema::trekkie_runs::id as trekkie_id;
+
+    match diesel::delete(trekkie_runs.filter(trekkie_id.eq(path.0)))
+        .get_result::<TrekkieRun>(&mut database_connection)
+    {
+        Ok(_) => Ok(HttpResponse::Ok().finish()),
+        Err(e) => {
+            error!("cannot delete trekkie run because of {:?}", e);
             Err(ServerError::InternalError)
         }
     }

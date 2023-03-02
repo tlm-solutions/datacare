@@ -50,6 +50,9 @@ pub enum ServerError {
 
     #[display(fmt = "unauthorized")]
     Unauthorized,
+
+    #[display(fmt = "forbidden")]
+    Forbidden,
 }
 
 impl Default for ListRequest {
@@ -73,6 +76,7 @@ impl error::ResponseError for ServerError {
             ServerError::InternalError => StatusCode::INTERNAL_SERVER_ERROR,
             ServerError::BadClientData => StatusCode::BAD_REQUEST,
             ServerError::Unauthorized => StatusCode::UNAUTHORIZED,
+            ServerError::Forbidden => StatusCode::FORBIDDEN,
         }
     }
 }
@@ -106,7 +110,8 @@ pub struct DeactivateRequest {
         station::station_delete,
         station::station_approve,
         trekkie_runs::trekkie_run_list,
-        trekkie_runs::trekkie_run_update
+        trekkie_runs::trekkie_run_update,
+        trekkie_runs::trekkie_run_delete
     ),
     components(schemas(
         Stats,

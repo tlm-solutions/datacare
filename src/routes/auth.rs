@@ -120,14 +120,17 @@ pub async fn user_login(
                     admin: (Role::from(user.role) == Role::Administrator),
                 }))
             } else {
-                debug!("Password does not match");
+                debug!("passwords dont match");
                 Err(ServerError::BadClientData)
             }
         }
-        Err(e) => {
-            error!("Err: {:?}", e);
-            Err(ServerError::InternalError)
-        }
+        Err(e) => match e {
+            diesel::result::Error::NotFound => Err(ServerError::Unauthorized),
+            _ => {
+                error!("postgres error while querying user: {:?}", e);
+                Err(ServerError::InternalError)
+            }
+        },
     }
 }
 
