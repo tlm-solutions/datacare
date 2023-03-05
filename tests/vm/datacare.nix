@@ -6,8 +6,8 @@
     database = {
       host = "127.0.0.1";
       port = config.services.postgresql.port;
-      user = "dvbdump";
-      database = "dvbdump";
+      user = "tlms";
+      database = "tlms";
       passwordFile = ./test-pw;
     };
     saltFile = ./test-salt;

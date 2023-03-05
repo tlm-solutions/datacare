@@ -95,7 +95,7 @@ in
       "datacare" = {
         enable = true;
 
-        description = "dvbdump managment service";
+        description = "tlms managment service";
         wantedBy = [ "multi-user.target" ];
 
         script = ''

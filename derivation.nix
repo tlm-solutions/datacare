@@ -1,4 +1,4 @@
-{ naersk, src, lib, pkg-config, cmake, protobuf, postgresql, zlib }:
+{ naersk, src, lib, pkg-config, cmake, protobuf, postgresql, zlib, openssl }:
 
 naersk.buildPackage {
   pname = "datacare";
@@ -9,7 +9,7 @@ naersk.buildPackage {
   cargoSha256 = lib.fakeSha256;
 
   nativeBuildInputs = [ pkg-config cmake ];
-  buildInputs = [ protobuf zlib postgresql ];
+  buildInputs = [ protobuf zlib postgresql openssl ];
 
   meta = with lib; {
     description = "Simple rust server which manages users, stations and regions";

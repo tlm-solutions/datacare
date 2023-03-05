@@ -19,7 +19,7 @@ Server which handels users, regions and stations. This service is the main point
 - **POSTGRES_PORT** port of postgres server
 - **POSTGRES_USER** postgres user
 - **POSTGRES_DATABASE** postgres database to use
-- **POSTGRES_PASSWORD_PATH** password under which the dvbdump database is protected
+- **POSTGRES_PASSWORD_PATH** password under which the tlms database is protected
 
 ### Commandline Arguments
 
