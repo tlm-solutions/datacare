@@ -104,7 +104,7 @@ pub async fn trekkie_run_update(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
     identity: Identity,
-    path: web::Path<(i64,)>,
+    path: web::Path<(Uuid,)>,
     request: web::Json<EditTrekkieRuns>,
 ) -> Result<web::Json<TrekkieRun>, ServerError> {
     let mut database_connection = match pool.get() {
@@ -156,7 +156,7 @@ pub async fn trekkie_run_delete(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
     identity: Identity,
-    path: web::Path<(i64,)>,
+    path: web::Path<(Uuid,)>,
     request: web::Json<EditTrekkieRuns>,
 ) -> Result<HttpResponse, ServerError> {
     let mut database_connection = match pool.get() {

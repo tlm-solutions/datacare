@@ -145,7 +145,7 @@ pub async fn user_register(
         name: Some(request.name.clone()),
         email: Some(request.email.clone()),
         password: password_hash,
-        role: Role::User.as_int(),
+        role: Role::User as i32,
         deactivated: false,
         email_setting: Some(0),
     };
@@ -174,7 +174,7 @@ pub async fn user_register(
         id: user.id,
         name: request.name.clone(),
         email: request.email.clone(),
-        role: Role::User.as_int(),
+        role: Role::User as i32,
         deactivated: false,
         email_setting: 0,
     }))
