@@ -1,10 +1,10 @@
 [package]
 name = "datacare"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2021"
 
 [dependencies]
-tlms = { version = "0.7", git = "https://github.com/tlm-solutions/tlms.rs", features = ["management", "telegrams", "trekkie"]}
+tlms = { version = "0.8", git = "https://github.com/tlm-solutions/tlms.rs", tag = "v0.8.0", features = ["management", "telegrams", "trekkie"]}
 clap = { version = "4", features = ["derive"] }
 
 actix-web = "4"
