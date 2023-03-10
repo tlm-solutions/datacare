@@ -124,6 +124,12 @@ pub async fn trekkie_run_update(
     warn!("updating trekkie runs {:?}", &request);
 
     use tlms::schema::trekkie_runs::{end_time, id as trekkie_id, line, run, start_time};
+    
+    // TODO add checks 
+    // - start earlier then end 
+    // - start newer then prev start
+    // - end older then prev end
+    //
 
     match diesel::update(trekkie_runs.filter(trekkie_id.eq(path.0)))
         .set((
@@ -168,6 +174,55 @@ pub async fn trekkie_run_delete(
     };
 
     let user_session = fetch_user(identity, &mut database_connection)?;
+
+    if !user_session.is_admin() {
+        return Err(ServerError::Forbidden);
+    }
+
+    warn!("deleting trekkie runs {:?}", &request);
+
+    use tlms::schema::trekkie_runs::id as trekkie_id;
+
+    match diesel::delete(trekkie_runs.filter(trekkie_id.eq(path.0)))
+        .get_result::<TrekkieRun>(&mut database_connection)
+    {
+        Ok(_) => Ok(HttpResponse::Ok().finish()),
+        Err(e) => {
+            error!("cannot delete trekkie run because of {:?}", e);
+            Err(ServerError::InternalError)
+        }
+    }
+}
+
+/// Will return information about the trekkie run like the list of gps positions
+#[utoipa::path(
+    get,
+    path = "/trekkie/{id}",
+    responses(
+        (status = 200, description = "successfully return trekkie run information"),
+        (status = 400, description = "invalid input data"),
+        (status = 500, description = "postgres pool error"),
+    ),
+)]
+pub async fn trekkie_run_info(
+    pool: web::Data<DbPool>,
+    _req: HttpRequest,
+    identity: Identity,
+    path: web::Path<(Uuid,)>,
+    request: web::Json<EditTrekkieRuns>,
+) -> Result<HttpResponse, ServerError> {
+    let mut database_connection = match pool.get() {
+        Ok(conn) => conn,
+        Err(e) => {
+            error!("cannot get connection from connection pool {:?}", e);
+            return Err(ServerError::InternalError);
+        }
+    };
+
+    let user_session = fetch_user(identity, &mut database_connection)?;
+    
+
+    
 
     if !user_session.is_admin() {
         return Err(ServerError::Forbidden);
