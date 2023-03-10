@@ -78,7 +78,7 @@ pub fn fetch_user(
     responses(
         (status = 200, description = "user was successfully authenticated", body = CreateUserResponse),
         (status = 500, description = "postgres pool error"),
-        (status = 400, description = "invalid user data")
+        (status = 400, description = "invalid user data"),
         (status = 401, description = "incorrect credentials")
     ),
 )]
@@ -131,7 +131,7 @@ pub async fn user_login(
                 error!("postgres error while querying user: {:?}", e);
                 Err(ServerError::InternalError)
             }
-        }o
+        }
     }
 }
 
