@@ -3,7 +3,8 @@ use crate::{
     routes::{ListRequest, ListResponse, ServerError, Stats},
     DbPool,
 };
-use tlms::management::{Region, Station};
+use tlms::management::Station;
+use tlms::locations::region::Region;
 use tlms::schema::stations::dsl::stations;
 
 use actix_identity::Identity;

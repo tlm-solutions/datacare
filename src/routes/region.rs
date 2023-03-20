@@ -3,7 +3,8 @@ use crate::{
     routes::{ListRequest, ListResponse, ServerError, Stats},
     DbPool,
 };
-use tlms::management::{InsertRegion, Region, Station};
+use tlms::management::Station;
+use tlms::locations::region::{InsertRegion, Region};
 use tlms::schema::regions::dsl::regions;
 
 use actix_identity::Identity;
@@ -30,7 +31,7 @@ pub struct CreateRegionRequest {
     pub transport_company: String,
     pub regional_company: Option<String>,
     pub frequency: Option<i64>,
-    pub r09_type: Option<i32>,
+    pub r09_type: Option<i64>,
     pub encoding: Option<i32>,
 }
 
@@ -41,7 +42,7 @@ pub struct EditRegionRequest {
     pub transport_company: String,
     pub regional_company: Option<String>,
     pub frequency: Option<i64>,
-    pub r09_type: Option<i32>,
+    pub r09_type: Option<i64>,
     pub encoding: Option<i32>,
 }
 
@@ -92,7 +93,7 @@ pub async fn region_create(
             transport_company: request.transport_company.clone(),
             regional_company: request.regional_company.clone(),
             frequency: request.frequency,
-            r09_type: request.r09_type,
+            r09_type: request.r09_type.map(|v| v.try_into().unwrap()),
             encoding: request.encoding,
             deactivated: false,
         })
