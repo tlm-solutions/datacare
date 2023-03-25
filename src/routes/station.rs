@@ -3,8 +3,8 @@ use crate::{
     routes::{ListRequest, ListResponse, ServerError, Stats},
     DbPool,
 };
-use tlms::management::user::Role;
 use tlms::management::Station;
+use tlms::management::user::Role;
 use tlms::schema::stations::dsl::stations;
 use tlms::locations::region::Region;
 
