@@ -2,7 +2,7 @@ use crate::{
     routes::{auth::fetch_user, ListRequest, ListResponse, ServerError},
     DbPool,
 };
-use tlms::management::user::{hash_password, Role, User};
+use tlms::management::user::{hash_password, OrgUsersRelation, Role, User};
 use tlms::schema::users::dsl::users;
 
 use actix_identity::Identity;
@@ -12,6 +12,7 @@ use diesel::{ExpressionMethods, QueryDsl};
 use log::{error, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -19,13 +20,6 @@ use uuid::Uuid;
 #[derive(Deserialize, Serialize, ToSchema, Debug)]
 pub struct RegisterUserRequest {
     pub name: String,
-    pub email: String,
-    pub password: String,
-}
-
-/// request for logging into a user
-#[derive(Deserialize, Serialize, ToSchema, Debug)]
-pub struct LoginRequest {
     pub email: String,
     pub password: String,
 }
@@ -39,26 +33,7 @@ pub struct ModifyUserRequest {
     pub deactivated: Option<bool>,
 }
 
-#[derive(Deserialize, Serialize, ToSchema, Debug)]
-pub struct UuidRequest {
-    pub id: Uuid,
-}
-
-#[derive(Deserialize, Serialize, ToSchema, Debug)]
-pub struct UuidResponse {
-    pub id: Uuid,
-    pub success: bool,
-}
-
-/// data returned after logging in
-#[derive(Deserialize, Serialize, ToSchema, Debug)]
-pub struct ResponseLogin {
-    pub success: bool,
-    pub id: Uuid,
-    pub admin: bool,
-    pub name: Option<String>,
-}
-
+/// struct which is returned after successfully creating a user
 #[derive(Deserialize, Serialize, ToSchema, Debug)]
 pub struct CreateUserResponse {
     pub success: bool,
@@ -70,9 +45,8 @@ pub struct CreateUserResponse {
 }
 
 #[derive(Deserialize, Serialize, ToSchema, Debug)]
-pub struct UserInfoResponse {
-    #[serde(flatten)]
-    pub user: User,
+pub struct SetOfRoles {
+    pub roles: HashSet<Role>,
 }
 
 /// This endpoint if registrating a new users
@@ -393,4 +367,124 @@ pub async fn user_list(
             Err(ServerError::BadClientData)
         }
     }
+}
+
+/// Return a list of roles
+#[utoipa::path(
+    get,
+    path = "/user/{user-id}/permissions/{org-id}",
+    responses(
+        (status = 200, description = "returning a list of roles the user has"),
+        (status = 500, description = "postgres pool error"),
+        (status = 400, description = "invalid user id")
+    ),
+)]
+pub async fn user_get_roles(
+    pool: web::Data<DbPool>,
+    identity: Identity,
+    path: web::Path<(Uuid, Uuid)>,
+    _req: HttpRequest,
+) -> Result<web::Json<SetOfRoles>, ServerError> {
+    let mut database_connection = match pool.get() {
+        Ok(conn) => conn,
+        Err(e) => {
+            error!("cannot get connection from connection pool {:?}", e);
+            return Err(ServerError::InternalError);
+        }
+    };
+
+    let session_user = fetch_user(identity, &mut database_connection)?;
+
+    if !(session_user.is_admin()
+        || session_user.has_role(&path.1, &Role::EditOrgUserRoles)
+        || session_user.user.id == path.0)
+    {
+        return Err(ServerError::Forbidden);
+    }
+
+    use tlms::schema::org_users_relation::dsl::org_users_relation;
+    use tlms::schema::org_users_relation::{organization, user_id};
+
+    // fetching interesting user
+    match org_users_relation
+        .filter(user_id.eq(path.0))
+        .filter(organization.eq(path.1))
+        .load::<OrgUsersRelation>(&mut database_connection)
+    {
+        Ok(user_list) => Ok(web::Json(SetOfRoles {
+            roles: user_list
+                .iter()
+                .map(|x| Role::try_from(x.role).unwrap())
+                .collect(),
+        })),
+        Err(e) => {
+            error!("error while listing rules {:?}", e);
+            Err(ServerError::BadClientData)
+        }
+    }
+}
+
+/// Set a List of Roles for a user
+#[utoipa::path(
+    put,
+    path = "/user/{user-id}/permissions/{org-id}",
+    responses(
+        (status = 200, description = "successfully set a list of roles for the user in this organization"),
+        (status = 500, description = "postgres pool error"),
+        (status = 400, description = "invalid user id")
+    ),
+)]
+pub async fn user_set_roles(
+    pool: web::Data<DbPool>,
+    identity: Identity,
+    path: web::Path<(Uuid, Uuid)>,
+    body: web::Form<SetOfRoles>,
+    _req: HttpRequest,
+) -> Result<HttpResponse, ServerError> {
+    let mut database_connection = match pool.get() {
+        Ok(conn) => conn,
+        Err(e) => {
+            error!("cannot get connection from connection pool {:?}", e);
+            return Err(ServerError::InternalError);
+        }
+    };
+
+    let session_user = fetch_user(identity, &mut database_connection)?;
+
+    if !(session_user.is_admin() || session_user.has_role(&path.1, &Role::EditOrgUserRoles)) {
+        return Err(ServerError::Forbidden);
+    }
+
+    let insert_values: Vec<OrgUsersRelation> = body
+        .roles
+        .iter()
+        .map(|x| OrgUsersRelation {
+            id: Uuid::new_v4(),
+            organization: path.1,
+            user_id: path.0,
+            role: (*x).into(),
+        })
+        .collect();
+
+    use tlms::schema::org_users_relation::dsl::org_users_relation;
+    use tlms::schema::org_users_relation::{organization, user_id};
+
+    if let Err(e) = diesel::delete(org_users_relation)
+        .filter(user_id.eq(path.0))
+        .filter(organization.eq(path.1))
+        .execute(&mut database_connection)
+    {
+        error!("cannot delete roles because of {:?}", e);
+        return Err(ServerError::BadClientData);
+    };
+
+    if let Err(e) = diesel::insert_into(org_users_relation)
+        .values(&insert_values)
+        .execute(&mut database_connection)
+    {
+        error!("while trying to insert user {:?}", e);
+        return Err(ServerError::BadClientData);
+    };
+
+    Ok(HttpResponse::Ok().finish())
 }

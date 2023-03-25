@@ -8,6 +8,9 @@
 
 ### Added
 
+- GET /user/user-id/permissions/org-id
+- PUT /user/user-id/permissions/org-id
+
 ### Fixed
 
 ### Misc

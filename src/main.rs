@@ -118,6 +118,14 @@ async fn main() -> std::io::Result<()> {
             .route("/user/{id}", web::put().to(routes::user::user_update))
             .route("/user/{id}", web::delete().to(routes::user::user_delete))
             .route("/user/{id}", web::get().to(routes::user::user_info))
+            .route(
+                "/user/{id}/permissions/{org-id}",
+                web::get().to(routes::user::user_get_roles),
+            )
+            .route(
+                "/user/{id}/permissions/{org-id}",
+                web::put().to(routes::user::user_set_roles),
+            )
             .route("/region", web::post().to(routes::region::region_create))
             .route("/region", web::get().to(routes::region::region_list))
             .route("/region/{id}", web::put().to(routes::region::region_update))
@@ -155,6 +163,10 @@ async fn main() -> std::io::Result<()> {
             .route(
                 "/trekkie/{id}",
                 web::delete().to(routes::trekkie_runs::trekkie_run_delete),
+            )
+            .route(
+                "/trekkie/{id}",
+                web::get().to(routes::trekkie_runs::trekkie_run_info),
             )
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")
