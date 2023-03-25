@@ -110,7 +110,7 @@ pub async fn station_create(
     // get currently logged in user
     let user_session = fetch_user(identity, &mut database_connection)?;
 
-    if !user_session.allowed(&request.organization, &Role::CreateCompanyStations) {
+    if !user_session.allowed(&request.organization, &Role::CreateOrganizationStations) {
         return Err(ServerError::Forbidden);
     }
 
@@ -272,14 +272,17 @@ pub async fn station_update(
     // there multiple combinations that would allow a user to edit this station
     // 1.) being admin
     // 2.) being maintainer and having the EditMaintainedStation role
-    // 3.) having the EditCompanyStation Role
+    // 3.) having the EditOrgnizationStations Role
     if !(user_session.is_admin()
         || (user_session.user.id == relevant_station.owner
             && user_session.has_role(
                 &relevant_station.organization,
                 &Role::EditMaintainedStations,
             ))
-        || (user_session.has_role(&relevant_station.organization, &Role::EditCompanyStations)))
+        || (user_session.has_role(
+            &relevant_station.organization,
+            &Role::EditOrganizationStations,
+        )))
     {
         return Err(ServerError::Forbidden);
     }
@@ -352,14 +355,17 @@ pub async fn station_delete(
     // there multiple combinations that would allow a user to edit this station
     // 1.) being admin
     // 2.) being maintainer and having the EditMaintainedStation role
-    // 3.) having the EditCompanyStation Role
+    // 3.) having the EditOrganizationStation Role
     if !(user_session.is_admin()
         || (user_session.user.id == relevant_station.owner
             && user_session.has_role(
                 &relevant_station.organization,
-                &Role::DeleteMaintainedStations,
+                &Role::DeleteOrganizationStations,
             ))
-        || (user_session.has_role(&relevant_station.organization, &Role::DeleteCompanyStations)))
+        || (user_session.has_role(
+            &relevant_station.organization,
+            &Role::DeleteOrganizationStations,
+        )))
     {
         return Err(ServerError::Forbidden);
     }
