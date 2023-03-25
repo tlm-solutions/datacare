@@ -410,6 +410,7 @@ pub async fn station_delete(
 
     warn!("trying to delete station! : {}", relevant_station.id);
 
+    // TODO: check this
     if user_session.is_admin() && request.is_some() && request.unwrap().force {
         match diesel::delete(stations.filter(id.eq(path.0))).execute(&mut database_connection) {
             Ok(_) => Ok(HttpResponse::Ok().finish()),
@@ -418,7 +419,7 @@ pub async fn station_delete(
                 Err(ServerError::InternalError)
             }
         }
-    } else if (user_session.id == relevant_station.owner) || user_session.is_admin() {
+    } else {
         match diesel::update(stations.filter(id.eq(path.0)))
             .set((deactivated.eq(true),))
             .get_result::<Station>(&mut database_connection)
@@ -429,8 +430,6 @@ pub async fn station_delete(
                 Err(ServerError::InternalError)
             }
         }
-    } else {
-        Err(ServerError::Forbidden)
     }
 }
 

@@ -131,7 +131,7 @@ pub async fn user_login(
                 error!("postgres error while querying user: {:?}", e);
                 Err(ServerError::InternalError)
             }
-        }
+        },
     }
 }
 

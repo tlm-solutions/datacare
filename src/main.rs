@@ -98,10 +98,14 @@ async fn main() -> std::io::Result<()> {
             .wrap(prometheus.clone())
             .wrap(IdentityMiddleware::default())
             .wrap(Logger::default())
-            .wrap(SessionMiddleware::builder(
-                RedisActorSessionStore::new(get_redis_uri()),
-                secret_key.clone(),
-            ).cookie_domain(Some("dvb.solutions".into())).build())
+            .wrap(
+                SessionMiddleware::builder(
+                    RedisActorSessionStore::new(get_redis_uri()),
+                    secret_key.clone(),
+                )
+                .cookie_domain(Some("dvb.solutions".into()))
+                .build(),
+            )
             .app_data(connection_pool.clone())
             .route(
                 "/auth/register",
