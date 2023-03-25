@@ -12,6 +12,7 @@ use diesel::{ExpressionMethods, QueryDsl};
 use log::{error, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -45,7 +46,7 @@ pub struct CreateUserResponse {
 
 #[derive(Deserialize, Serialize, ToSchema, Debug)]
 pub struct SetOfRoles {
-    pub roles: Vec<Role>,
+    pub roles: HashSet<Role>,
 }
 
 /// This endpoint if registrating a new users
@@ -437,7 +438,7 @@ pub async fn user_set_roles(
     pool: web::Data<DbPool>,
     identity: Identity,
     path: web::Path<(Uuid, Uuid)>,
-    mut body: web::Form<SetOfRoles>,
+    body: web::Form<SetOfRoles>,
     _req: HttpRequest,
 ) -> Result<HttpResponse, ServerError> {
     let mut database_connection = match pool.get() {
@@ -454,7 +455,6 @@ pub async fn user_set_roles(
         return Err(ServerError::Forbidden);
     }
 
-    crate::utils::dedup(&mut body.roles);
     let insert_values: Vec<OrgUsersRelation> = body
         .roles
         .iter()

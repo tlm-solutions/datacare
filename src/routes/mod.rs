@@ -124,6 +124,7 @@ pub struct DeactivateRequest {
         user::RegisterUserRequest,
         user::ModifyUserRequest,
         user::CreateUserResponse,
+        user::SetOfRoles,
         region::RegionCreationResponse,
         region::CreateRegionRequest,
         region::EditRegionRequest,
