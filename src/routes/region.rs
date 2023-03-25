@@ -3,9 +3,11 @@ use crate::{
     routes::{ListRequest, ListResponse, ServerError, Stats},
     DbPool,
 };
-use tlms::management::Station;
+
 use tlms::locations::region::{InsertRegion, Region};
+use tlms::management::Station;
 use tlms::schema::regions::dsl::regions;
+use tlms::telegrams::r09::R09Type;
 
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, HttpResponse};
@@ -86,6 +88,16 @@ pub async fn region_create(
         return Err(ServerError::Forbidden);
     }
 
+    let r09_type: Option<R09Type> = match request.r09_type {
+        Some(x) => match R09Type::try_from(x) {
+            Ok(value) => Some(value),
+            Err(_) => {
+                return Err(ServerError::BadClientData);
+            }
+        },
+        None => None,
+    };
+
     match diesel::insert_into(regions)
         .values(&InsertRegion {
             id: None,
@@ -93,7 +105,7 @@ pub async fn region_create(
             transport_company: request.transport_company.clone(),
             regional_company: request.regional_company.clone(),
             frequency: request.frequency,
-            r09_type: request.r09_type.map(|v| v.try_into().unwrap()),
+            r09_type,
             encoding: request.encoding,
             deactivated: false,
         })
@@ -291,7 +303,7 @@ pub async fn region_info(
     } else {
         match stations
             .filter(station_region.eq(path.0))
-            .filter(public.eq(true).or(owner.eq(user_session.id)))
+            .filter(public.eq(true).or(owner.eq(user_session.user.id)))
             .load::<Station>(&mut database_connection)
         {
             Ok(all_station) => all_station,

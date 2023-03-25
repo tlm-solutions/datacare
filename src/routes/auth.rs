@@ -1,5 +1,5 @@
 use crate::{routes::ServerError, DbPool};
-use tlms::management::user::{verify_password, Role, User};
+use tlms::management::user::{verify_password, AuthorizedUser, User};
 use tlms::schema::users::dsl::users;
 
 use actix_identity::Identity;
@@ -42,9 +42,7 @@ pub struct ResponseLogin {
 pub fn fetch_user(
     user: Identity,
     database_connection: &mut PgConnection,
-) -> Result<User, ServerError> {
-    use tlms::schema::users::id;
-
+) -> Result<AuthorizedUser, ServerError> {
     // user uuid from currently authenticat
     let user_id: Uuid = match user.id() {
         Ok(found_id) => match Uuid::parse_str(&found_id) {
@@ -60,14 +58,7 @@ pub fn fetch_user(
         }
     };
 
-    // user struct from currently authenticated user
-    match users
-        .filter(id.eq(user_id))
-        .first::<User>(database_connection)
-    {
-        Ok(found_user) => Ok(found_user),
-        Err(_) => Err(ServerError::BadClientData),
-    }
+    AuthorizedUser::from_postgres(&user_id, database_connection).ok_or(ServerError::BadClientData)
 }
 
 /// This endpoint takes an email address and a password if they are both valid
@@ -118,7 +109,7 @@ pub async fn user_login(
                     id: user.id,
                     success: true,
                     name: user.name.clone(),
-                    admin: (Role::from(user.role) == Role::Administrator),
+                    admin: user.admin,
                 }))
             } else {
                 debug!("passwords dont match");
@@ -131,7 +122,7 @@ pub async fn user_login(
                 error!("postgres error while querying user: {:?}", e);
                 Err(ServerError::InternalError)
             }
-        }
+        },
     }
 }
 
@@ -170,7 +161,7 @@ pub async fn auth_info(
     pool: web::Data<DbPool>,
     identity: Identity,
     _req: HttpRequest,
-) -> Result<web::Json<User>, ServerError> {
+) -> Result<web::Json<AuthorizedUser>, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,
         Err(e) => {

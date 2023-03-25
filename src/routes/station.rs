@@ -3,14 +3,14 @@ use crate::{
     routes::{ListRequest, ListResponse, ServerError, Stats},
     DbPool,
 };
-use tlms::management::Station;
 use tlms::locations::region::Region;
+use tlms::management::user::Role;
+use tlms::management::Station;
 use tlms::schema::stations::dsl::stations;
 
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, HttpResponse};
 use diesel::query_dsl::RunQueryDsl;
-use diesel::BoolExpressionMethods;
 use diesel::{ExpressionMethods, QueryDsl};
 
 use log::{debug, error, warn};
@@ -35,6 +35,7 @@ pub struct CreateStationRequest {
     pub antenna: Option<i32>,
     pub telegram_decoder_version: Option<String>,
     pub notes: Option<String>,
+    pub organization: Uuid,
 }
 
 /// holds all the necessary information that are required to update information about
@@ -109,6 +110,10 @@ pub async fn station_create(
     // get currently logged in user
     let user_session = fetch_user(identity, &mut database_connection)?;
 
+    if !user_session.allowed(&request.organization, &Role::CreateCompanyStations) {
+        return Err(ServerError::Forbidden);
+    }
+
     // if the region doesn't exist we can directly dispose of the request
     use tlms::schema::regions::dsl::regions;
     use tlms::schema::regions::id;
@@ -140,7 +145,7 @@ pub async fn station_create(
         lat: request.lat,
         lon: request.lon,
         region: request.region,
-        owner: user_session.id,
+        owner: user_session.user.id,
         approved: false,
         deactivated: false,
         public: request.public,
@@ -151,6 +156,7 @@ pub async fn station_create(
         antenna: request.antenna,
         telegram_decoder_version: request.telegram_decoder_version.clone(),
         notes: request.notes.clone(),
+        organization: request.organization,
     };
 
     match diesel::insert_into(stations)
@@ -179,7 +185,6 @@ pub async fn station_list(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
     optional_params: Option<web::Form<ListRequest>>,
-    unpacked_identity: Option<Identity>,
 ) -> Result<web::Json<ListResponse<Station>>, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,
@@ -189,109 +194,33 @@ pub async fn station_list(
         }
     };
 
-    use tlms::schema::stations::{owner, public};
-
     // gets the query parameters out of the request
     let query_params: ListRequest = match optional_params {
         Some(request) => request.into_inner(),
         None => ListRequest::default(),
     };
 
-    match unpacked_identity {
-        Some(identity) => {
-            // get currently logged in user
-            let user_session = fetch_user(identity, &mut database_connection)?;
-
-            if user_session.is_admin() {
-                // admin users get all stations
-
-                let count: i64 = match stations.count().get_result(&mut database_connection) {
-                    Ok(result) => result,
-                    Err(e) => {
-                        error!("database error {:?}", e);
-                        return Err(ServerError::InternalError);
-                    }
-                };
-
-                match stations
-                    .limit(query_params.limit)
-                    .offset(query_params.offset)
-                    .order(tlms::schema::stations::name)
-                    .load::<Station>(&mut database_connection)
-                {
-                    Ok(station_list) => Ok(web::Json(ListResponse {
-                        count,
-                        elements: station_list,
-                    })),
-                    Err(e) => {
-                        error!("error while querying database for stations {:?}", e);
-                        Err(ServerError::BadClientData)
-                    }
-                }
-            } else {
-                // unprivileged session only gets public ones and their own
-
-                let count: i64 = match stations
-                    .filter(public.eq(true).or(owner.eq(user_session.id)))
-                    .count()
-                    .get_result(&mut database_connection)
-                {
-                    Ok(result) => result,
-                    Err(e) => {
-                        error!("database error {:?}", e);
-                        return Err(ServerError::InternalError);
-                    }
-                };
-
-                match stations
-                    .filter(public.eq(true).or(owner.eq(user_session.id)))
-                    .limit(query_params.limit)
-                    .offset(query_params.offset)
-                    .order(tlms::schema::stations::name)
-                    .load::<Station>(&mut database_connection)
-                {
-                    Ok(all_station) => Ok(web::Json(ListResponse {
-                        count,
-                        elements: all_station,
-                    })),
-                    Err(e) => {
-                        error!("error while fetching the config {:?}", e);
-                        Err(ServerError::InternalError)
-                    }
-                }
-            }
+    let count: i64 = match stations.count().get_result(&mut database_connection) {
+        Ok(result) => result,
+        Err(e) => {
+            error!("database error {:?}", e);
+            return Err(ServerError::InternalError);
         }
-        None => {
-            // no session returns only public station
+    };
 
-            let count: i64 = match stations
-                .filter(public.eq(true))
-                .count()
-                .get_result(&mut database_connection)
-            {
-                Ok(result) => result,
-                Err(e) => {
-                    error!("database error {:?}", e);
-                    return Err(ServerError::InternalError);
-                }
-            };
-
-            match stations
-                .filter(public.eq(true))
-                .limit(query_params.limit)
-                .offset(query_params.offset)
-                .order(tlms::schema::stations::name)
-                .load::<Station>(&mut database_connection)
-            {
-                Ok(all_station) => Ok(web::Json(ListResponse {
-                    count,
-                    elements: all_station,
-                })),
-                Err(e) => {
-                    error!("error while fetching the config {:?}", e);
-                    Err(ServerError::InternalError)
-                }
-            }
+    match stations
+        .limit(query_params.limit)
+        .offset(query_params.offset)
+        .order(tlms::schema::stations::name)
+        .load::<Station>(&mut database_connection)
+    {
+        Ok(station_list) => Ok(web::Json(ListResponse {
+            count,
+            elements: station_list,
+        })),
+        Err(e) => {
+            error!("error while querying database for stations {:?}", e);
+            Err(ServerError::BadClientData)
         }
     }
 }
@@ -340,7 +269,18 @@ pub async fn station_update(
         }
     };
 
-    if !user_session.is_admin() && user_session.id != relevant_station.owner {
+    // there multiple combinations that would allow a user to edit this station
+    // 1.) being admin
+    // 2.) being maintainer and having the EditMaintainedStation role
+    // 3.) having the EditCompanyStation Role
+    if !(user_session.is_admin()
+        || (user_session.user.id == relevant_station.owner
+            && user_session.has_role(
+                &relevant_station.organization,
+                &Role::EditMaintainedStations,
+            ))
+        || (user_session.has_role(&relevant_station.organization, &Role::EditCompanyStations)))
+    {
         return Err(ServerError::Forbidden);
     }
 
@@ -409,6 +349,21 @@ pub async fn station_delete(
         }
     };
 
+    // there multiple combinations that would allow a user to edit this station
+    // 1.) being admin
+    // 2.) being maintainer and having the EditMaintainedStation role
+    // 3.) having the EditCompanyStation Role
+    if !(user_session.is_admin()
+        || (user_session.user.id == relevant_station.owner
+            && user_session.has_role(
+                &relevant_station.organization,
+                &Role::DeleteMaintainedStations,
+            ))
+        || (user_session.has_role(&relevant_station.organization, &Role::DeleteCompanyStations)))
+    {
+        return Err(ServerError::Forbidden);
+    }
+
     warn!("trying to delete station! : {}", relevant_station.id);
 
     if user_session.is_admin() && request.is_some() && request.unwrap().force {
@@ -419,7 +374,7 @@ pub async fn station_delete(
                 Err(ServerError::InternalError)
             }
         }
-    } else if (user_session.id == relevant_station.owner) || user_session.is_admin() {
+    } else if (user_session.user.id == relevant_station.owner) || user_session.is_admin() {
         match diesel::update(stations.filter(id.eq(path.0)))
             .set((deactivated.eq(true),))
             .get_result::<Station>(&mut database_connection)
@@ -448,7 +403,6 @@ pub async fn station_delete(
 pub async fn station_info(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
-    wrapped_identity: Option<Identity>,
     path: web::Path<(Uuid,)>,
 ) -> Result<web::Json<StationInfoResponse>, ServerError> {
     let mut database_connection = match pool.get() {
@@ -472,86 +426,16 @@ pub async fn station_info(
         }
     };
 
-    // TODO: optimize
-    // counts telegram from this regions over different time intervals
-
-    /*let telegram_count_last_day = match r09_telegrams
-        .filter(telegram_station.eq(&relevant_station.id))
-        .filter(time.lt(now - 1_i32.days()))
-        .select(diesel::dsl::count(telegram_id))
-        .first::<i64>(&mut database_connection)
-    {
-        Ok(telegram_count) => telegram_count,
-        Err(e) => {
-            error!("error while fetching the config {:?}", e);
-            return Err(ServerError::InternalError);
-        }
-    };
-    let telegram_count_last_month = match r09_telegrams
-        .filter(telegram_station.eq(&relevant_station.id))
-        .filter(time.lt(now - 30_i32.days()))
-        .select(diesel::dsl::count(telegram_id))
-        .first::<i64>(&mut database_connection)
-    {
-        Ok(telegram_count) => telegram_count,
-        Err(e) => {
-            error!("error while fetching the config {:?}", e);
-            return Err(ServerError::InternalError);
-        }
-    };
-    let telegram_count_global = match r09_telegrams
-        .filter(telegram_station.eq(&relevant_station.id))
-        .select(diesel::dsl::count(telegram_id))
-        .first::<i64>(&mut database_connection)
-    {
-        Ok(telegram_count) => telegram_count,
-        Err(e) => {
-            error!("error while fetching the config {:?}", e);
-            return Err(ServerError::InternalError);
-        }
-    };
-    let stats = Stats {
-        telegram_count: telegram_count_global,
-        last_day_receive_rate: (telegram_count_last_day as f32 / 86400f32),
-        last_month_receive_rate: (telegram_count_last_month as f32 / 2592000f32),
-    };
-
-    */
-
     let stats = Stats {
         telegram_count: 100213231,
         last_day_receive_rate: 81322.512,
         last_month_receive_rate: 123212.231,
     };
 
-    match wrapped_identity {
-        Some(identity) => {
-            // get currently logged in user
-            let user_session = fetch_user(identity, &mut database_connection)?;
-
-            if user_session.is_admin()
-                || relevant_station.owner == user_session.id
-                || relevant_station.public
-            {
-                Ok(web::Json(StationInfoResponse {
-                    station: relevant_station,
-                    stats,
-                }))
-            } else {
-                Err(ServerError::Forbidden)
-            }
-        }
-        None => {
-            if relevant_station.public {
-                Ok(web::Json(StationInfoResponse {
-                    station: relevant_station,
-                    stats,
-                }))
-            } else {
-                Err(ServerError::Unauthorized)
-            }
-        }
-    }
+    Ok(web::Json(StationInfoResponse {
+        station: relevant_station,
+        stats,
+    }))
 }
 
 /// will approve a station
@@ -582,7 +466,20 @@ pub async fn station_approve(
     // get currently logged in user
     let user_session = fetch_user(identity, &mut database_connection)?;
 
-    if !user_session.is_admin() {
+    let relevant_station = match stations
+        .filter(id.eq(path.0))
+        .first::<Station>(&mut database_connection)
+    {
+        Ok(possible_station) => possible_station,
+        Err(e) => {
+            error!("error while searching for mentioned station {:?}", e);
+            return Err(ServerError::InternalError);
+        }
+    };
+
+    if !(user_session.is_admin()
+        || user_session.has_role(&relevant_station.organization, &Role::ApproveStations))
+    {
         return Err(ServerError::Forbidden);
     }
 
