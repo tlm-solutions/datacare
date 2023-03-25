@@ -35,7 +35,6 @@ pub struct LoginRequest {
 pub struct ModifyUserRequest {
     pub name: Option<String>,
     pub email: Option<String>,
-    pub role: Option<i32>,
     pub email_setting: Option<i32>,
     pub deactivated: Option<bool>,
 }
@@ -66,7 +65,6 @@ pub struct CreateUserResponse {
     pub id: Uuid,
     pub name: String,
     pub email: String,
-    pub role: i32,
     pub email_setting: i32,
     pub deactivated: bool,
 }
@@ -145,9 +143,9 @@ pub async fn user_register(
         name: Some(request.name.clone()),
         email: Some(request.email.clone()),
         password: password_hash,
-        role: Role::User as i32,
         deactivated: false,
         email_setting: Some(0),
+        admin: false,
     };
 
     if let Err(e) = diesel::insert_into(users)
@@ -174,7 +172,6 @@ pub async fn user_register(
         id: user.id,
         name: request.name.clone(),
         email: request.email.clone(),
-        role: Role::User as i32,
         deactivated: false,
         email_setting: 0,
     }))
@@ -207,7 +204,10 @@ pub async fn user_delete(
 
     let session_user = fetch_user(identity, &mut database_connection)?;
 
-    if !session_user.is_admin() {
+    // user can delete a account
+    // 1.) The User making the request is admin
+    // 2.) The user wants to delete its own account
+    if !(session_user.is_admin() || session_user.user.id == path.0) {
         return Err(ServerError::Forbidden);
     }
 
@@ -226,7 +226,7 @@ pub async fn user_delete(
     }
 }
 
-/// Update on of the following user properties (name, email, role, deactivated)
+/// Update on of the following user properties (name, email, deactivated)
 /// Only Admins or the user in question can modify attributes.
 #[utoipa::path(
     put,
@@ -252,7 +252,7 @@ pub async fn user_update(
         }
     };
 
-    use tlms::schema::users::{deactivated, email, id, name, role};
+    use tlms::schema::users::{deactivated, email, id, name};
 
     // user which should be modified
     let user = match users
@@ -268,23 +268,11 @@ pub async fn user_update(
 
     let session_user = fetch_user(identity, &mut database_connection)?;
 
-    // TODO: can be simplified
-    // current user is admin he can do what ever he wants
-    if !session_user.is_admin() {
-        // its fine if the user tries to modify himself or an administrator modifies other user
-        if path.0 != session_user.id {
-            return Err(ServerError::Forbidden);
-        }
-
-        // user shouldn't be able to modify his own role
-        if request.role.is_some() {
-            return Err(ServerError::Forbidden);
-        }
-    }
-
-    // checking if the supplied role number is valid
-    if Role::from(request.role.unwrap()) == Role::Unknown {
-        return Err(ServerError::BadClientData);
+    // the user can update its account when
+    // 1.) The User is admin
+    // 2.) The User wants to edit its own data
+    if !(session_user.is_admin() || session_user.user.id == path.0) {
+        return Err(ServerError::Forbidden);
     }
 
     let user_name = user.name.clone().map_or_else(
@@ -300,7 +288,6 @@ pub async fn user_update(
         .set((
             name.eq(user_name),
             email.eq(user_email),
-            role.eq(request.role.unwrap_or(user.role)),
             deactivated.eq(request.deactivated.unwrap_or(user.deactivated)),
         ))
         .get_result::<User>(&mut database_connection)
@@ -325,7 +312,6 @@ pub async fn user_update(
 )]
 pub async fn user_info(
     pool: web::Data<DbPool>,
-    identity: Identity,
     _req: HttpRequest,
     path: web::Path<(Uuid,)>,
 ) -> Result<web::Json<User>, ServerError> {
@@ -336,12 +322,6 @@ pub async fn user_info(
             return Err(ServerError::InternalError);
         }
     };
-
-    let session_user = fetch_user(identity, &mut database_connection)?;
-
-    if !session_user.is_admin() && session_user.id != path.0 {
-        return Err(ServerError::Forbidden);
-    }
 
     use tlms::schema::users::id;
 
@@ -372,7 +352,6 @@ pub async fn user_info(
 )]
 pub async fn user_list(
     pool: web::Data<DbPool>,
-    identity: Identity,
     optional_params: Option<web::Form<ListRequest>>,
     _req: HttpRequest,
 ) -> Result<web::Json<ListResponse<User>>, ServerError> {
@@ -383,12 +362,6 @@ pub async fn user_list(
             return Err(ServerError::InternalError);
         }
     };
-
-    let session_user = fetch_user(identity, &mut database_connection)?;
-
-    if !session_user.is_admin() {
-        return Err(ServerError::Forbidden);
-    }
 
     // gets the query parameters out of the request
     let query_params: ListRequest = match optional_params {

@@ -116,7 +116,7 @@ pub struct DeactivateRequest {
     components(schemas(
         Stats,
         ListRequest,
-        ListResponse<tlms::management::Region>,
+        ListResponse<tlms::locations::region::Region>,
         ListResponse<tlms::management::Station>,
         auth::LoginRequest,
         user::RegisterUserRequest,

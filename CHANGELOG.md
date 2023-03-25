@@ -4,6 +4,8 @@
 
 ### Breaking
 
+- Changed Endpoints e.g removing Roles
+
 ### Added
 
 ### Fixed
