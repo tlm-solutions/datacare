@@ -3,10 +3,10 @@ use crate::{
     routes::{ListRequest, ListResponse, ServerError, Stats},
     DbPool,
 };
-use tlms::management::Station;
-use tlms::management::user::Role;
-use tlms::schema::stations::dsl::stations;
 use tlms::locations::region::Region;
+use tlms::management::user::Role;
+use tlms::management::Station;
+use tlms::schema::stations::dsl::stations;
 
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, HttpResponse};
@@ -477,8 +477,9 @@ pub async fn station_approve(
         }
     };
 
-
-    if !(user_session.is_admin() || user_session.has_role(&relevant_station.organization, &Role::ApproveStations)) {
+    if !(user_session.is_admin()
+        || user_session.has_role(&relevant_station.organization, &Role::ApproveStations))
+    {
         return Err(ServerError::Forbidden);
     }
 

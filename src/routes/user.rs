@@ -203,7 +203,7 @@ pub async fn user_delete(
     };
 
     let session_user = fetch_user(identity, &mut database_connection)?;
-    
+
     // user can delete a account
     // 1.) The User making the request is admin
     // 2.) The user wants to delete its own account
@@ -267,11 +267,11 @@ pub async fn user_update(
     };
 
     let session_user = fetch_user(identity, &mut database_connection)?;
-    
+
     // the user can update its account when
-    // 1.) The User is admin 
+    // 1.) The User is admin
     // 2.) The User wants to edit its own data
-    if !(session_user.is_admin() || session_user.user.id == path.0 ){
+    if !(session_user.is_admin() || session_user.user.id == path.0) {
         return Err(ServerError::Forbidden);
     }
 
