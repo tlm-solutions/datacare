@@ -124,9 +124,9 @@ pub async fn trekkie_run_update(
     warn!("updating trekkie runs {:?}", &request);
 
     use tlms::schema::trekkie_runs::{end_time, id as trekkie_id, line, run, start_time};
-    
-    // TODO add checks 
-    // - start earlier then end 
+
+    // TODO add checks
+    // - start earlier then end
     // - start newer then prev start
     // - end older then prev end
     //
@@ -220,9 +220,6 @@ pub async fn trekkie_run_info(
     };
 
     let user_session = fetch_user(identity, &mut database_connection)?;
-    
-
-    
 
     if !user_session.is_admin() {
         return Err(ServerError::Forbidden);
