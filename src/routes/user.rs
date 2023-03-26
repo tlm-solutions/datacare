@@ -412,10 +412,7 @@ pub async fn user_get_roles(
         .load::<OrgUsersRelation>(&mut database_connection)
     {
         Ok(user_list) => Ok(web::Json(SetOfRoles {
-            roles: user_list
-                .iter()
-                .map(|x| x.role)
-                .collect(),
+            roles: user_list.iter().map(|x| x.role).collect(),
         })),
         Err(e) => {
             error!("error while listing rules {:?}", e);
