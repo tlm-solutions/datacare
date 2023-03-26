@@ -40,7 +40,7 @@ pub struct ForceDeleteRequest {
 }
 
 /// containes the value for approved that should be set
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize)]
 pub struct OrganizationInfoResponse {
     /// info about the organization
     #[serde(flatten)]
