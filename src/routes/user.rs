@@ -412,10 +412,7 @@ pub async fn user_get_roles(
         .load::<OrgUsersRelation>(&mut database_connection)
     {
         Ok(user_list) => Ok(web::Json(SetOfRoles {
-            roles: user_list
-                .iter()
-                .map(|x| Role::try_from(x.role).unwrap())
-                .collect(),
+            roles: user_list.iter().map(|x| x.role).collect(),
         })),
         Err(e) => {
             error!("error while listing rules {:?}", e);
@@ -462,7 +459,7 @@ pub async fn user_set_roles(
             id: Uuid::new_v4(),
             organization: path.1,
             user_id: path.0,
-            role: (*x).into(),
+            role: *x,
         })
         .collect();
 
