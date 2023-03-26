@@ -402,11 +402,11 @@ pub async fn user_get_roles(
         return Err(ServerError::Forbidden);
     }
 
-    use tlms::schema::org_users_relation::dsl::org_users_relation;
-    use tlms::schema::org_users_relation::{organization, user_id};
+    use tlms::schema::org_users_relations::dsl::org_users_relations;
+    use tlms::schema::org_users_relations::{organization, user_id};
 
     // fetching interesting user
-    match org_users_relation
+    match org_users_relations
         .filter(user_id.eq(path.0))
         .filter(organization.eq(path.1))
         .load::<OrgUsersRelation>(&mut database_connection)
@@ -414,7 +414,7 @@ pub async fn user_get_roles(
         Ok(user_list) => Ok(web::Json(SetOfRoles {
             roles: user_list
                 .iter()
-                .map(|x| Role::try_from(x.role).unwrap())
+                .map(|x| x.role)
                 .collect(),
         })),
         Err(e) => {
@@ -462,14 +462,14 @@ pub async fn user_set_roles(
             id: Uuid::new_v4(),
             organization: path.1,
             user_id: path.0,
-            role: (*x).into(),
+            role: *x,
         })
         .collect();
 
-    use tlms::schema::org_users_relation::dsl::org_users_relation;
-    use tlms::schema::org_users_relation::{organization, user_id};
+    use tlms::schema::org_users_relations::dsl::org_users_relations;
+    use tlms::schema::org_users_relations::{organization, user_id};
 
-    if let Err(e) = diesel::delete(org_users_relation)
+    if let Err(e) = diesel::delete(org_users_relations)
         .filter(user_id.eq(path.0))
         .filter(organization.eq(path.1))
         .execute(&mut database_connection)
@@ -478,7 +478,7 @@ pub async fn user_set_roles(
         return Err(ServerError::BadClientData);
     };
 
-    if let Err(e) = diesel::insert_into(org_users_relation)
+    if let Err(e) = diesel::insert_into(org_users_relations)
         .values(&insert_values)
         .execute(&mut database_connection)
     {
