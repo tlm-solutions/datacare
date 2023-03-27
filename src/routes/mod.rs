@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod organization;
 pub mod region;
 pub mod station;
 pub mod trekkie_runs;
@@ -113,7 +114,13 @@ pub struct DeactivateRequest {
         station::station_approve,
         trekkie_runs::trekkie_run_list,
         trekkie_runs::trekkie_run_update,
-        trekkie_runs::trekkie_run_delete
+        trekkie_runs::trekkie_run_delete,
+        organization::orga_create,
+        organization::orga_list,
+        organization::organization_update,
+        organization::organization_delete,
+        organization::organization_info
+
     ),
     components(schemas(
         Stats,
@@ -134,7 +141,10 @@ pub struct DeactivateRequest {
         station::SearchStationRequest,
         station::ForceDeleteRequest,
         station::ApproveStationRequest,
-        trekkie_runs::EditTrekkieRuns
+        trekkie_runs::EditTrekkieRuns,
+        organization::CreateOrganizationRequest,
+        organization::UpdateOrganizationRequest,
+        organization::ForceDeleteRequest,
     ))
 )]
 pub struct ApiDoc;

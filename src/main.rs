@@ -168,6 +168,26 @@ async fn main() -> std::io::Result<()> {
                 "/trekkie/{id}",
                 web::get().to(routes::trekkie_runs::trekkie_run_info),
             )
+            .route(
+                "/organization",
+                web::get().to(routes::organization::orga_list),
+            )
+            .route(
+                "/organization",
+                web::post().to(routes::organization::orga_create),
+            )
+            .route(
+                "/organization/{id}",
+                web::put().to(routes::organization::organization_update),
+            )
+            .route(
+                "/organization/{id}",
+                web::delete().to(routes::organization::organization_delete),
+            )
+            .route(
+                "/organization/{id}",
+                web::get().to(routes::organization::organization_info),
+            )
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")
                     .url("/api-doc/openapi.json", routes::ApiDoc::openapi()),
