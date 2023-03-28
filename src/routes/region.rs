@@ -33,7 +33,7 @@ pub struct CreateRegionRequest {
     pub transport_company: String,
     pub regional_company: Option<String>,
     pub frequency: Option<i64>,
-    pub r09_type: Option<i64>,
+    pub r09_type: Option<R09Type>,
     pub encoding: Option<i32>,
 }
 
@@ -44,7 +44,7 @@ pub struct EditRegionRequest {
     pub transport_company: String,
     pub regional_company: Option<String>,
     pub frequency: Option<i64>,
-    pub r09_type: Option<i64>,
+    pub r09_type: Option<R09Type>,
     pub encoding: Option<i32>,
 }
 
@@ -62,8 +62,21 @@ pub struct RegionInfoStruct {
 #[utoipa::path(
     post,
     path = "/region",
+    params(
+        ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
+    ),
+    request_body(
+        content = CreateRegionRequest,
+        description = "holding old the data for a region",
+        content_type = "application/json"
+    ),
+    security(
+        ("user_roles" = ["admin"])
+    ),
     responses(
         (status = 200, description = "region was successfully created", body = RegionCreationResponse),
+        (status = 400, description = "given data is malformed"),
+        (status = 403, description = "user doesn't have admin role"),
         (status = 500, description = "postgres pool error"),
     ),
 )]
@@ -88,16 +101,6 @@ pub async fn region_create(
         return Err(ServerError::Forbidden);
     }
 
-    let r09_type: Option<R09Type> = match request.r09_type {
-        Some(x) => match R09Type::try_from(x) {
-            Ok(value) => Some(value),
-            Err(_) => {
-                return Err(ServerError::BadClientData);
-            }
-        },
-        None => None,
-    };
-
     match diesel::insert_into(regions)
         .values(&InsertRegion {
             id: None,
@@ -105,7 +108,7 @@ pub async fn region_create(
             transport_company: request.transport_company.clone(),
             regional_company: request.regional_company.clone(),
             frequency: request.frequency,
-            r09_type,
+            r09_type: request.r09_type.clone(),
             encoding: request.encoding,
             deactivated: false,
         })
@@ -123,6 +126,14 @@ pub async fn region_create(
 #[utoipa::path(
     get,
     path = "/region",
+    params(
+        ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
+    ),
+    request_body(
+        content = Option<ListRequest>,
+        description = "request for listing",
+        content_type = "application/json"
+    ),
     responses(
         (status = 200, description = "list of regions", body = Vec<Region>),
         (status = 500, description = "postgres pool error"),
@@ -175,11 +186,24 @@ pub async fn region_list(
 
 /// Will overwrite a region with the new data on success it will return the updated region.
 #[utoipa::path(
-    put,
+    post,
     path = "/region/{id}",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = i64, Path, description = "identitier of the region")
+    ),
+    request_body(
+        content = EditRegionRequest,
+        description = "holding the data with which the region will be overwritten",
+        content_type = "application/json"
+    ),
+    security(
+        ("user_roles" = ["admin"])
+    ),
     responses(
-        (status = 200, description = "successfully edited region", body = Region),
-        (status = 400, description = "invalid input data"),
+        (status = 200, description = "region successfully updated", body = Region),
+        (status = 400, description = "given data is malformed"),
+        (status = 403, description = "user doesn't have admin role"),
         (status = 500, description = "postgres pool error"),
     ),
 )]
@@ -216,7 +240,7 @@ pub async fn region_update(
             transport_company.eq(request.transport_company.clone()),
             regional_company.eq(request.regional_company.clone()),
             frequency.eq(request.frequency),
-            r09_type.eq(request.r09_type),
+            r09_type.eq(request.r09_type.clone()),
             encoding.eq(request.encoding),
         ))
         .get_result::<Region>(&mut database_connection)
@@ -249,9 +273,12 @@ pub async fn region_update(
 #[utoipa::path(
     get,
     path = "/region/{id}",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = i64, Path, description = "identitier of the region")
+    ),
     responses(
-        (status = 200, description = "will return more detailled information about a region"),
-        (status = 400, description = "user suplied an unkown region id"),
+        (status = 200, description = "will return more detailled information about the region", body = RegionInfoStruct),
         (status = 500, description = "postgres pool error"),
     ),
 )]
@@ -366,13 +393,20 @@ pub async fn region_info(
     }))
 }
 
-/// will overwritte or delete the specified region
+/// will deactivate or delete the specified region
 #[utoipa::path(
     delete,
     path = "/region/{id}",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = i64, Path, description = "identitier of the region")
+    ),
+    security(
+        ("user_roles" = ["admin"])
+    ),
     responses(
-        (status = 200, description = "successfully edited region", body = Region),
-        (status = 400, description = "invalid input data"),
+        (status = 200, description = "region delete or deactivate"),
+        (status = 403, description = "user doesn't have admin role"),
         (status = 500, description = "postgres pool error"),
     ),
 )]
@@ -401,7 +435,6 @@ pub async fn region_delete(
     use tlms::schema::stations::dsl::stations;
     use tlms::schema::stations::region as station_region;
 
-    //use diesel::{select, dsl::exists};
     // TODO: exists ist currently completely broken fix with a later diesel release
     // check if there are any station with this region
     let exists = match stations

@@ -52,14 +52,48 @@ pub struct OrganizationInfoResponse {
     /// list of user persmissions
     pub users: HashMap<Uuid, Vec<Role>>,
 }
-
+/*#[utoipa::path(
+    post,
+    path = "/station/{id}/approve",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = Uuid, Path, description = "organization identifier")
+    ),
+    request_body(
+        content = ApproveStationRequest,
+        description = "body can set a force flag which will do a proper delete",
+        content_type = "application/json"
+    ),
+    security(
+        ("user_roles" = ["admin", "Role::ApproveStations"])
+    ),
+    responses(
+        (status = 200, description = "station was successfully approved"),
+        (status = 400, description = "invalid user data"),
+        (status = 403, description = "user doesn't have correct permissions"),
+        (status = 500, description = "postgres pool error"),
+    ),
+)]*/
 /// will create a organization with the owner of the currently authenticated user
+/// this owner can then be later overwritten by the update endpoint.
 #[utoipa::path(
     post,
     path = "/organization",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+    ),
+    request_body(
+        content = CreateOrganizationRequest,
+        description = "information required to create an organization like name and public",
+        content_type = "application/json"
+    ),
+    security(
+        ("user_roles" = ["admin"])
+    ),
     responses(
         (status = 200, description = "organization was successfully created", body = Organization),
         (status = 400, description = "invalid user data"),
+        (status = 403, description = "invalid user permissions"),
         (status = 500, description = "postgres pool error"),
     ),
 )]
@@ -100,16 +134,24 @@ pub async fn orga_create(
     {
         Err(e) => {
             error!("while trying to insert organization {:?}", e);
-            Err(ServerError::BadClientData)
+            Err(ServerError::InternalError)
         }
         Ok(_) => Ok(web::Json(new_organization)),
     }
 }
 
-/// will return a list of organizations
+/// will return a list of public organizations
 #[utoipa::path(
     get,
     path = "/organization",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+    ),
+    request_body(
+        content = ListRequest,
+        description = "parameters for pageination for listing regions",
+        content_type = "application/json"
+    ),
     responses(
         (status = 200, description = "list of organizations was successfully returned", body = Vec<Organization>),
         (status = 400, description = "invalid user data"),
@@ -155,15 +197,27 @@ pub async fn orga_list(
         })),
         Err(e) => {
             error!("error while querying database for organization {:?}", e);
-            Err(ServerError::BadClientData)
+            Err(ServerError::InternalError)
         }
     }
 }
 
-/// will edit a organization
+/// will overwritte the specified organization with the given data.
 #[utoipa::path(
     put,
     path = "/organization/{id}",
+    params(
+        ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
+        ("id" = Uuid, Path, description = "organization identifier")
+    ),
+    request_body(
+        content = UpdateOrganizationRequest,
+        description = "fields that can be overwritten by this endpoint",
+        content_type = "application/json"
+    ),
+    security(
+        ("user_roles" = ["admin", "Role::EditOwnOrganization"])
+    ),
     responses(
         (status = 200, description = "organization got successfully updated", body = Organization),
         (status = 400, description = "invalid user data"),
@@ -232,6 +286,18 @@ pub async fn organization_update(
 #[utoipa::path(
     delete,
     path = "/organization/{id}",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = Uuid, Path, description = "organization identifier")
+    ),
+    request_body(
+        content = Option<ForceDeleteRequest>,
+        description = "optional request body if the force flag it set the organization is permanently deleted",
+        content_type = "application/json"
+    ),
+    security(
+        ("user_roles" = ["admin", "owner"])
+    ),
     responses(
         (status = 200, description = "organization got successfully deleted"),
         (status = 400, description = "invalid user data"),
@@ -305,12 +371,16 @@ pub async fn organization_delete(
     }
 }
 
-/// will return information about the requested organization
+/// will return more detailled information about the requested organization
 #[utoipa::path(
     get,
     path = "/organization/{id}",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = Uuid, Path, description = "organization identifier")
+    ),
     responses(
-        (status = 200, description = "organization information successfully returned"),
+        (status = 200, description = "organization information successfully returned", body = OrganizationInfoResponse),
         (status = 400, description = "invalid user data"),
         (status = 500, description = "postgres pool error"),
     ),
@@ -372,7 +442,7 @@ pub async fn organization_info(
                 user_roles
                     .entry(entry.user_id)
                     .or_insert_with(Vec::new)
-                    .push(Role::try_from(entry.role).unwrap());
+                    .push(entry.role);
             }
         }
         Err(e) => {
