@@ -51,11 +51,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1679870731,
-        "narHash": "sha256-Wmhz5gYmA8rxYx9OvoVgjRobWwqzjGIDlkvg/ljOJvs=",
+        "lastModified": 1680095449,
+        "narHash": "sha256-cnM1QfANsg4d+hvNpmihFKwAn+R4VNtLvElSQtI3EVw=",
         "owner": "tlm-solutions",
         "repo": "tlms.rs",
-        "rev": "6c572290ce4141ab90eddbb6bfc80aae91c61241",
+        "rev": "75bcddabdb8df9e04a0849b174d06409ac40715d",
         "type": "github"
       },
       "original": {

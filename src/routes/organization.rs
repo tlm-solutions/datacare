@@ -337,7 +337,7 @@ pub async fn organization_delete(
         {
             Ok(_) => Ok(HttpResponse::Ok().finish()),
             Err(e) => {
-                error!("cannot deactivate user because of {:?}", e);
+                error!("cannot delete organizations because of {:?}", e);
                 Err(ServerError::InternalError)
             }
         }
@@ -348,7 +348,7 @@ pub async fn organization_delete(
         {
             Ok(_) => Ok(HttpResponse::Ok().finish()),
             Err(e) => {
-                error!("cannot deactivate user because of {:?}", e);
+                error!("cannot deactivate organizations because of {:?}", e);
                 Err(ServerError::InternalError)
             }
         }

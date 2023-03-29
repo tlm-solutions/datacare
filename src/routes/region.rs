@@ -164,6 +164,7 @@ pub async fn region_list(
         None => ListRequest::default(),
     };
 
+    // counts the region so pageination knows how much more to fetch
     let count: i64 = match regions.count().get_result(&mut database_connection) {
         Ok(result) => result,
         Err(e) => {
@@ -172,7 +173,7 @@ pub async fn region_list(
         }
     };
 
-    // just SELECT * FROM regions;
+    // just SELECT * FROM regions LIMIT limit OFFSET offset ORDER BY name DESC;
     match regions
         .limit(query_params.limit)
         .offset(query_params.offset)
@@ -253,7 +254,7 @@ pub async fn region_update(
     {
         Ok(return_region) => Ok(web::Json(return_region)),
         Err(e) => {
-            error!("cannot deactivate user because of {:?}", e);
+            error!("cannot update regions because of {:?}", e);
             Err(ServerError::InternalError)
         }
     }
@@ -311,7 +312,7 @@ pub async fn region_info(
         Ok(found_region) => found_region,
         Err(e) => {
             debug!("error encountered while querying region: {:?}", e);
-            return Err(ServerError::BadClientData);
+            return Err(ServerError::InternalError);
         }
     };
 
@@ -470,7 +471,7 @@ pub async fn region_delete(
         {
             Ok(_) => Ok(HttpResponse::Ok().finish()),
             Err(e) => {
-                error!("cannot deactivate user because of {:?}", e);
+                error!("cannot deactivate region because of {:?}", e);
                 Err(ServerError::InternalError)
             }
         }
@@ -478,7 +479,7 @@ pub async fn region_delete(
         match diesel::delete(regions.filter(id.eq(path.0))).execute(&mut database_connection) {
             Ok(_) => Ok(HttpResponse::Ok().finish()),
             Err(e) => {
-                error!("cannot deactivate user because of {:?}", e);
+                error!("cannot delete region because of {:?}", e);
                 Err(ServerError::InternalError)
             }
         }

@@ -54,7 +54,7 @@ pub struct UpdateStationRequest {
     pub notes: Option<String>,
 }
 
-/// Request to search for the station
+/// Request for 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchStationRequest {
     pub owner: Option<Uuid>,
@@ -64,12 +64,14 @@ pub struct SearchStationRequest {
 /// Forces deletion of a station
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct ForceDeleteRequest {
+    /// Setting this flag will permenantly delete the station
     pub force: bool,
 }
 
 /// Request to approve the station
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct ApproveStationRequest {
+    /// Will approve or disapprove the stations
     pub approve: bool,
 }
 
@@ -139,7 +141,7 @@ pub async fn station_create(
                 "error while querying region, probably not region with this id {:?}",
                 e
             );
-            return Err(ServerError::BadClientData);
+            return Err(ServerError::InternalError);
         }
     };
 
@@ -177,13 +179,13 @@ pub async fn station_create(
     {
         Err(e) => {
             error!("while trying to insert station {:?}", e);
-            Err(ServerError::BadClientData)
+            Err(ServerError::InternalError)
         }
         Ok(_) => Ok(web::Json(new_station)),
     }
 }
 
-/// Returns a list of stations
+/// Returns a list of stations with Pagenation
 #[utoipa::path(
     get,
     path = "/station",
@@ -240,7 +242,7 @@ pub async fn station_list(
         })),
         Err(e) => {
             error!("error while querying database for stations {:?}", e);
-            Err(ServerError::BadClientData)
+            Err(ServerError::InternalError)
         }
     }
 }
@@ -338,7 +340,7 @@ pub async fn station_update(
     {
         Ok(result) => Ok(web::Json(result)),
         Err(e) => {
-            error!("cannot deactivate user because of {:?}", e);
+            error!("cannot deactivate station because of {:?}", e);
             Err(ServerError::InternalError)
         }
     }
@@ -423,7 +425,7 @@ pub async fn station_delete(
         match diesel::delete(stations.filter(id.eq(path.0))).execute(&mut database_connection) {
             Ok(_) => Ok(HttpResponse::Ok().finish()),
             Err(e) => {
-                error!("cannot deactivate user because of {:?}", e);
+                error!("cannot delete the station because of {:?}", e);
                 Err(ServerError::InternalError)
             }
         }
@@ -434,7 +436,7 @@ pub async fn station_delete(
         {
             Ok(_) => Ok(HttpResponse::Ok().finish()),
             Err(e) => {
-                error!("cannot deactivate user because of {:?}", e);
+                error!("cannot deactivate station because of {:?}", e);
                 Err(ServerError::InternalError)
             }
         }
@@ -558,7 +560,7 @@ pub async fn station_approve(
     {
         Ok(_) => Ok(HttpResponse::Ok().finish()),
         Err(e) => {
-            error!("cannot deactivate user because of {:?}", e);
+            error!("cannot approve station because of {:?}", e);
             Err(ServerError::InternalError)
         }
     }

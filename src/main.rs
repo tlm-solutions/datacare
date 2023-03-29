@@ -34,7 +34,7 @@ pub fn create_db_pool() -> DbPool {
 
     let password_path = env::var("POSTGRES_PASSWORD_PATH").unwrap_or(default_postgres_pw_path);
     let password = fs::read_to_string(password_path)
-        .map_err(|e| println!("While trying to read password file: {:?}", e))
+        .map_err(|e| eprintln!("While trying to read password file: {:?}", e))
         .expect("cannot read password file!");
 
     let database_url = format!(
@@ -83,8 +83,8 @@ async fn main() -> std::io::Result<()> {
     info!("Starting Data Collection Server ... ");
     let host = args.host.as_str();
     let port = args.port;
-    debug!("Listening on: {}:{}", host, port);
 
+    debug!("Listening on: {}:{}", host, port);
     let connection_pool = web::Data::new(create_db_pool());
     let secret_key = Key::generate();
     let prometheus = get_prometheus();
