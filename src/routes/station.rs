@@ -54,7 +54,7 @@ pub struct UpdateStationRequest {
     pub notes: Option<String>,
 }
 
-/// Request for 
+/// Request for listing stations
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchStationRequest {
     pub owner: Option<Uuid>,
