@@ -7,6 +7,7 @@ pub mod user;
 
 use tlms::management::{Station, user::{User, Organization}};
 use tlms::locations::region::Region;
+use tlms::telegrams::r09::R09Type;
 
 use actix_web::{
     error,
@@ -130,6 +131,7 @@ pub struct DeactivateRequest {
         User,
         Station,
         Organization,
+        R09Type,
         Stats,
         ListRequest,
         ListResponse<tlms::locations::region::Region>,
