@@ -33,7 +33,9 @@ pub fn create_db_pool() -> DbPool {
     let default_postgres_pw_path = String::from("/run/secrets/postgres_password");
 
     let password_path = env::var("POSTGRES_PASSWORD_PATH").unwrap_or(default_postgres_pw_path);
-    let password = fs::read_to_string(password_path).map_err(|e| {println!("error {:?}", e)}).expect("cannot read password file!");
+    let password = fs::read_to_string(password_path)
+        .map_err(|e| println!("While trying to read password file: {:?}", e))
+        .expect("cannot read password file!");
 
     let database_url = format!(
         "postgres://{}:{}@{}:{}/{}",
@@ -65,7 +67,7 @@ pub fn get_prometheus() -> PrometheusMetrics {
     PrometheusMetricsBuilder::new("api")
         .endpoint("/metrics")
         .build()
-        .unwrap()
+        .expect("Failed to create prometheus metric endpoint")
 }
 
 #[actix_web::main]

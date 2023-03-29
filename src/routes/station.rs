@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-/// holds all the necessary information that are required to create a new station
+/// Request to create a new station
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct CreateStationRequest {
     pub name: String,
@@ -38,8 +38,7 @@ pub struct CreateStationRequest {
     pub organization: Uuid,
 }
 
-/// holds all the necessary information that are required to update information about
-/// at station
+/// Request to update information about a station
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct UpdateStationRequest {
     pub name: String,
@@ -55,25 +54,26 @@ pub struct UpdateStationRequest {
     pub notes: Option<String>,
 }
 
+/// Request to search for the station
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchStationRequest {
     pub owner: Option<Uuid>,
     pub region: Option<i64>,
 }
 
-/// forces deletion of a station
+/// Forces deletion of a station
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct ForceDeleteRequest {
     pub force: bool,
 }
 
-/// containes the value for approved that should be set
+/// Request to approve the station
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct ApproveStationRequest {
     pub approve: bool,
 }
 
-/// containes the value for approved that should be set
+/// Response with verbose station information
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct StationInfoResponse {
     #[serde(flatten)]
@@ -83,7 +83,7 @@ pub struct StationInfoResponse {
     pub stats: Stats,
 }
 
-/// will create a station with the owner of the currently authenticated user
+/// Creates a station with the owner set to the currently authenticated user
 #[utoipa::path(
     post,
     path = "/station",
@@ -92,17 +92,17 @@ pub struct StationInfoResponse {
     ),
     request_body(
         content = CreateStationRequest,
-        description = "all information required to create a station",
+        description = "Station creation request",
         content_type = "application/json"
     ),
     security(
         ("user_roles" = ["admin", "Role::CreateOrganizationStations"])
     ),
     responses(
-        (status = 200, description = "station was successfully created", body = Station),
-        (status = 400, description = "invalid user data"),
-        (status = 403, description = "user doesn't have admin role or has CreateOrganizationStations role"),
-        (status = 500, description = "postgres pool error"),
+        (status = 200, description = "Station successfully created", body = Station),
+        (status = 400, description = "Invalid user data"),
+        (status = 403, description = "User doesn't have admin role or has CreateOrganizationStations role"),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn station_create(
@@ -183,7 +183,7 @@ pub async fn station_create(
     }
 }
 
-/// will return a list of stations
+/// Returns a list of stations
 #[utoipa::path(
     get,
     path = "/station",
@@ -192,13 +192,13 @@ pub async fn station_create(
     ),
     request_body(
         content = Option<ListRequest>,
-        description = "list request for pageination",
+        description = "Pagenation options",
         content_type = "application/json"
     ),
     responses(
-        (status = 200, description = "list of stations was successfully returned", body = ListResponse<Station>),
-        (status = 400, description = "invalid user data"),
-        (status = 500, description = "postgres pool error"),
+        (status = 200, description = "List of stations successfully returned", body = ListResponse<Station>),
+        (status = 400, description = "Invalid user data"),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn station_list(
@@ -245,51 +245,27 @@ pub async fn station_list(
     }
 }
 
-/*
-#[utoipa::path(
-    put,
-    path = "/user/{id}",
-    params(
-        ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
-        ("id" = Uuid, Path, description = "identitier of the user")
-    ),
-    request_body(
-        content = ModifyUserRequest,
-        description = "field to update the user specified in the url",
-        content_type = "application/json"
-    ),
-    security(
-        ("user_roles" = ["admin", "user"])
-    ),
-    responses(
-        (status = 200, description = "successfully updated user data"),
-        (status = 400, description = "invalid user id"),
-        (status = 403, description = "user doesn't have admin role or is this user"),
-        (status = 500, description = "postgres pool error"),
-    ),
-)]
-*/
-/// will edit a station
+/// Edits a station
 #[utoipa::path(
     put,
     path = "/station/{id}",
     params(
         ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
-        ("id" = Uuid, Path, description = "station identifier")
+        ("id" = Uuid, Path, description = "Station identifier")
     ),
     request_body(
         content = UpdateStationRequest,
-        description = "this struct will overwrite the station in the database",
+        description = "Data with which to overwrite the station information",
         content_type = "application/json"
     ),
     security(
         ("user_roles" = ["admin", "user", "Role::EditMaintainedStations", "Role::EditOrganizationStations"])
     ),
     responses(
-        (status = 200, description = "station got successfully updated", body = Station),
-        (status = 400, description = "invalid user data"),
-        (status = 403, description = "user doesn't have correct permissions"),
-        (status = 500, description = "postgres pool error"),
+        (status = 200, description = "Station successfully updated", body = Station),
+        (status = 400, description = "Invalid user data"),
+        (status = 403, description = "User doesn't have correct permissions"),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn station_update(
@@ -368,27 +344,27 @@ pub async fn station_update(
     }
 }
 
-/// will try to delete a station if this is not possible we will deactivate it.
+/// Tries to delete a station. If this is not possible, deactivates it.
 #[utoipa::path(
     delete,
     path = "/station/{id}",
     params(
         ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
-        ("id" = Uuid, Path, description = "station identifier")
+        ("id" = Uuid, Path, description = "Station identifier")
     ),
     request_body(
         content = Option<ForceDeleteRequest>,
-        description = "body can set a force flag which will do a proper delete",
+        description = "Optional body with the `force` flag. If set, will delete the station from the DB",
         content_type = "application/json"
     ),
     security(
         ("user_roles" = ["admin", "user", "Role::DeleteOrganizationStations", "Role::DeleteMaintainedStations"])
     ),
     responses(
-        (status = 200, description = "station got successfully deleted"),
-        (status = 400, description = "invalid user data"),
-        (status = 403, description = "user doesn't have correct permissions"),
-        (status = 500, description = "postgres pool error"),
+        (status = 200, description = "Station successfully deleted"),
+        (status = 400, description = "Invalid user data"),
+        (status = 403, description = "User doesn't have correct permissions"),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn station_delete(
@@ -465,17 +441,17 @@ pub async fn station_delete(
     }
 }
 
-/// will return information about the requested station
+/// Returns information about the requested station
 #[utoipa::path(
     get,
     path = "/station/{id}",
     params(
         ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
-        ("id" = Uuid, Path, description = "station identifier")
+        ("id" = Uuid, Path, description = "Station identifier")
     ),
     responses(
-        (status = 200, description = "station information successfully returned", body = StationInfoResponse),
-        (status = 500, description = "postgres pool error"),
+        (status = 200, description = "Station information successfully returned", body = StationInfoResponse),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn station_info(
@@ -516,27 +492,27 @@ pub async fn station_info(
     }))
 }
 
-/// will approve a station
+/// Approves the station
 #[utoipa::path(
     post,
     path = "/station/{id}/approve",
     params(
         ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
-        ("id" = Uuid, Path, description = "station identifier")
+        ("id" = Uuid, Path, description = "Station identifier")
     ),
     request_body(
         content = ApproveStationRequest,
-        description = "body can set a force flag which will do a proper delete",
+        description = "Request to approve the station",
         content_type = "application/json"
     ),
     security(
         ("user_roles" = ["admin", "Role::ApproveStations"])
     ),
     responses(
-        (status = 200, description = "station was successfully approved"),
-        (status = 400, description = "invalid user data"),
-        (status = 403, description = "user doesn't have correct permissions"),
-        (status = 500, description = "postgres pool error"),
+        (status = 200, description = "Station was successfully approved"),
+        (status = 400, description = "Invalid user data"),
+        (status = 403, description = "User doesn't have correct permissions"),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn station_approve(
