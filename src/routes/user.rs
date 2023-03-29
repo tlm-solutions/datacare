@@ -16,7 +16,7 @@ use std::collections::HashSet;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-/// request for registering a new user
+/// Request to register a new user
 #[derive(Deserialize, Serialize, ToSchema, Debug)]
 pub struct RegisterUserRequest {
     pub name: String,
@@ -24,7 +24,7 @@ pub struct RegisterUserRequest {
     pub password: String,
 }
 
-/// modifing a user
+/// Request to modify a user
 #[derive(Deserialize, Serialize, ToSchema, Debug)]
 pub struct ModifyUserRequest {
     pub name: Option<String>,
@@ -33,7 +33,7 @@ pub struct ModifyUserRequest {
     pub deactivated: Option<bool>,
 }
 
-/// struct which is returned after successfully creating a user
+/// Response after successful user creation
 #[derive(Deserialize, Serialize, ToSchema, Debug)]
 pub struct CreateUserResponse {
     pub success: bool,
@@ -49,16 +49,25 @@ pub struct SetOfRoles {
     pub roles: HashSet<Role>,
 }
 
-/// This endpoint if registrating a new users
-/// it needs a valid email address a user name and password which is at least 8
-/// characters long
+/// This endpoint registers a new user. Requirements to the submitted data:
+///
+/// - email: needs to be a valid email address
+/// - password: needs to be at least 8 characters long
 #[utoipa::path(
     post,
     path = "/user",
+    params(
+        ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
+    ),
+    request_body(
+        content = RegisterUserRequest,
+        description = "Basic user information like username, password and email",
+        content_type = "application/json"
+    ),
     responses(
-       (status = 200, description = "user was successfully created", body = CreateUserResponse),
-        (status = 500, description = "postgres pool error"),
-        (status = 400, description = "invalid user data"),
+        (status = 200, description = "User successfully registered", body = CreateUserResponse),
+        (status = 400, description = "Invalid data"),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn user_register(
@@ -151,15 +160,21 @@ pub async fn user_register(
     }))
 }
 
-/// we can not really delete a user we mark the user as deactivated which strips
-/// him of every priviliges and function
+/// Deactivates a user, strips him of all permissions
 #[utoipa::path(
     delete,
     path = "/user/{id}",
+    params(
+        ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
+        ("id" = Uuid, Path, description = "user ID")
+    ),
+    security(
+        ("user_roles" = ["admin", "user"])
+    ),
     responses(
-        (status = 200, description = "successfully deleted user"),
-        (status = 500, description = "postgres pool error"),
-        (status = 400, description = "invalid user id")
+        (status = 200, description = "Successfully deactivated user"),
+        (status = 403, description = "Unauthorized"),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn user_delete(
@@ -187,6 +202,7 @@ pub async fn user_delete(
 
     use tlms::schema::users::{deactivated, id};
 
+    //TODO: remove roles
     //TODO: add force deletion
     match diesel::update(users.filter(id.eq(path.0)))
         .set((deactivated.eq(true),))
@@ -200,15 +216,33 @@ pub async fn user_delete(
     }
 }
 
-/// Update on of the following user properties (name, email, deactivated)
+/// Updates the user. Following user properties can be updated:
+///
+/// - name
+/// - email
+/// - deactivated
+///
 /// Only Admins or the user in question can modify attributes.
 #[utoipa::path(
     put,
     path = "/user/{id}",
+    params(
+        ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
+        ("id" = Uuid, Path, description = "user ID")
+    ),
+    request_body(
+        content = ModifyUserRequest,
+        description = "Field to update for the specified user",
+        content_type = "application/json"
+    ),
+    security(
+        ("user_roles" = ["admin", "user"])
+    ),
     responses(
-        (status = 200, description = "successfully updated user data"),
-        (status = 500, description = "postgres pool error"),
-        (status = 400, description = "invalid user id")
+        (status = 200, description = "Successfully updated user data"),
+        (status = 400, description = "Invalid user id"),
+        (status = 403, description = "User doesn't have admin role or is this user"),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn user_update(
@@ -278,10 +312,14 @@ pub async fn user_update(
 #[utoipa::path(
     get,
     path = "/user/{id}",
+    params(
+        ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
+        ("id" = Uuid, Path, description = "user ID")
+    ),
     responses(
-        (status = 200, description = "returning user information"),
-        (status = 500, description = "postgres pool error"),
-        (status = 400, description = "invalid user id")
+        (status = 200, description = "User information successfully returned", body = User),
+        (status = 500, description = "Postgres pool error"),
+        (status = 400, description = "Invalid user id")
     ),
 )]
 pub async fn user_info(
@@ -318,10 +356,17 @@ pub async fn user_info(
 #[utoipa::path(
     get,
     path = "/user",
+    params(
+        ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
+    ),
+    request_body(
+        content = Option<ListRequest>,
+        description = "Pagination options",
+        content_type = "application/json"
+    ),
     responses(
-        (status = 200, description = "returning a list of public users"),
-        (status = 500, description = "postgres pool error"),
-        (status = 400, description = "invalid user id")
+        (status = 200, description = "User list successfully returned", body = ListResponse<User>),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn user_list(
@@ -364,19 +409,28 @@ pub async fn user_list(
         })),
         Err(e) => {
             error!("error while listing users {:?}", e);
-            Err(ServerError::BadClientData)
+            Err(ServerError::InternalError)
         }
     }
 }
 
-/// Return a list of roles
+/// Returns a list of roles of the user in the organization
 #[utoipa::path(
     get,
-    path = "/user/{user-id}/permissions/{org-id}",
+    path = "/user/{user_id}/permissions/{org_id}",
+    params(
+        ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
+        ("user_id" = Uuid, Path, description = "user ID"),
+        ("org_id" = Uuid, Path, description = "organization ID")
+    ),
+    security(
+        ("user_roles" = ["admin", "user", "Role::EditOrgUserRoles"])
+    ),
     responses(
-        (status = 200, description = "returning a list of roles the user has"),
-        (status = 500, description = "postgres pool error"),
-        (status = 400, description = "invalid user id")
+        (status = 200, description = "Set of the user roles successfully returned", body = SetOfRoles),
+        (status = 400, description = "Invalid user id"),
+        (status = 403, description = "User doesn't have admin role, not user in question, or user doesn't have EditOrgUserRoles"),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn user_get_roles(
@@ -421,14 +475,28 @@ pub async fn user_get_roles(
     }
 }
 
-/// Set a List of Roles for a user
+/// Sets a list of roles for a user in a organization
 #[utoipa::path(
     put,
-    path = "/user/{user-id}/permissions/{org-id}",
+    path = "/user/{user_id}/permissions/{org_id}",
+    params(
+        ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
+        ("user_id" = Uuid, Path, description = "User ID"),
+        ("org_id" = Uuid, Path, description = "Organization ID")
+    ),
+    request_body(
+        content = SetOfRoles,
+        description = "List of roles to grant to the user",
+        content_type = "application/json"
+    ),
+    security(
+        ("user_roles" = ["admin", "Role::EditOrgUserRoles"])
+    ),
     responses(
-        (status = 200, description = "successfully set a list of roles for the user in this organization"),
-        (status = 500, description = "postgres pool error"),
-        (status = 400, description = "invalid user id")
+        (status = 200, description = "Successfully set user roles in the organization"),
+        (status = 400, description = "Invalid user id"),
+        (status = 403, description = "User doesn't have admin role or user doesn't have EditOrgUserRoles"),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn user_set_roles(

@@ -19,48 +19,66 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-/// containes the value for approved that should be set
+/// Request body for creating an organization
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct CreateOrganizationRequest {
+    /// Organization name
     pub name: String,
 }
 
-/// containes the value for approved that should be set
+/// Request body for updating the information about organization
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct UpdateOrganizationRequest {
+    /// Organization name
     pub name: String,
+    /// If organization should be listed publicly
     pub public: bool,
+    /// Organization owner
     pub owner: Uuid,
 }
 
-/// containes the value for approved that should be set
+/// Request for forcibly deleting an organization
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct ForceDeleteRequest {
+    /// If true, organization will be forcefully deleted
     pub force: bool,
 }
 
-/// containes the value for approved that should be set
+/// Response containing verbose information about organization
 #[derive(Serialize, Deserialize)]
 pub struct OrganizationInfoResponse {
-    /// info about the organization
+    /// Information about the organization
     #[serde(flatten)]
     pub organization: Organization,
 
-    /// list of associated organizations
+    /// List of associated organizations
     pub stations: Vec<Station>,
 
-    /// list of user persmissions
+    /// List of users in organization with their respective permissions
     pub users: HashMap<Uuid, Vec<Role>>,
 }
 
-/// will create a organization with the owner of the currently authenticated user
+/// Creates an organization with the owner of the currently authenticated user. The owner can be
+/// changed later overwritten by the update endpoint.
 #[utoipa::path(
     post,
     path = "/organization",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of the user"),
+    ),
+    request_body(
+        content = CreateOrganizationRequest,
+        description = "Information required to create an organization",
+        content_type = "application/json"
+    ),
+    security(
+        ("user_roles" = ["admin"])
+    ),
     responses(
-        (status = 200, description = "organization was successfully created", body = Organization),
-        (status = 400, description = "invalid user data"),
-        (status = 500, description = "postgres pool error"),
+        (status = 200, description = "Organization was successfully created", body = Organization),
+        (status = 400, description = "Invalid user data"),
+        (status = 403, description = "Invalid user permissions"),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn orga_create(
@@ -100,20 +118,28 @@ pub async fn orga_create(
     {
         Err(e) => {
             error!("while trying to insert organization {:?}", e);
-            Err(ServerError::BadClientData)
+            Err(ServerError::InternalError)
         }
         Ok(_) => Ok(web::Json(new_organization)),
     }
 }
 
-/// will return a list of organizations
+/// Returns a list of public organizations.
 #[utoipa::path(
     get,
     path = "/organization",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+    ),
+    request_body(
+        content = ListRequest,
+        description = "parameters for region list pageination",
+        content_type = "application/json"
+    ),
     responses(
-        (status = 200, description = "list of organizations was successfully returned", body = Vec<Organization>),
-        (status = 400, description = "invalid user data"),
-        (status = 500, description = "postgres pool error"),
+        (status = 200, description = "List of organizations was successfully returned", body = Vec<Organization>),
+        (status = 400, description = "Invalid user data"),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn orga_list(
@@ -155,19 +181,31 @@ pub async fn orga_list(
         })),
         Err(e) => {
             error!("error while querying database for organization {:?}", e);
-            Err(ServerError::BadClientData)
+            Err(ServerError::InternalError)
         }
     }
 }
 
-/// will edit a organization
+/// Overwrites the specified organization with given data.
 #[utoipa::path(
     put,
     path = "/organization/{id}",
+    params(
+        ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
+        ("id" = Uuid, Path, description = "Organization identifier")
+    ),
+    request_body(
+        content = UpdateOrganizationRequest,
+        description = "Fields that will be overwritten by this endpoint",
+        content_type = "application/json"
+    ),
+    security(
+        ("user_roles" = ["admin", "Role::EditOwnOrganization"])
+    ),
     responses(
-        (status = 200, description = "organization got successfully updated", body = Organization),
-        (status = 400, description = "invalid user data"),
-        (status = 500, description = "postgres pool error"),
+        (status = 200, description = "Organization got successfully updated", body = Organization),
+        (status = 400, description = "Invalid user data"),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn organization_update(
@@ -228,10 +266,22 @@ pub async fn organization_update(
     }
 }
 
-/// will try to delete a organization if this is not possible we will deactivate it.
+/// Tries to delete a organization. If this is not possible - deactivates it.
 #[utoipa::path(
     delete,
     path = "/organization/{id}",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = Uuid, Path, description = "Organization identifier")
+    ),
+    request_body(
+        content = Option<ForceDeleteRequest>,
+        description = "Optional request body. If the force flag it set the organization is permanently deleted.",
+        content_type = "application/json"
+    ),
+    security(
+        ("user_roles" = ["admin", "owner"])
+    ),
     responses(
         (status = 200, description = "organization got successfully deleted"),
         (status = 400, description = "invalid user data"),
@@ -287,7 +337,7 @@ pub async fn organization_delete(
         {
             Ok(_) => Ok(HttpResponse::Ok().finish()),
             Err(e) => {
-                error!("cannot deactivate user because of {:?}", e);
+                error!("cannot delete organizations because of {:?}", e);
                 Err(ServerError::InternalError)
             }
         }
@@ -298,21 +348,25 @@ pub async fn organization_delete(
         {
             Ok(_) => Ok(HttpResponse::Ok().finish()),
             Err(e) => {
-                error!("cannot deactivate user because of {:?}", e);
+                error!("cannot deactivate organizations because of {:?}", e);
                 Err(ServerError::InternalError)
             }
         }
     }
 }
 
-/// will return information about the requested organization
+/// Returns detailed information about the organization
 #[utoipa::path(
     get,
     path = "/organization/{id}",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = Uuid, Path, description = "Organization identifier")
+    ),
     responses(
-        (status = 200, description = "organization information successfully returned"),
-        (status = 400, description = "invalid user data"),
-        (status = 500, description = "postgres pool error"),
+        (status = 200, description = "Organization information successfully returned", body = OrganizationInfoResponse),
+        (status = 400, description = "Invalid user data"),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn organization_info(
@@ -372,7 +426,7 @@ pub async fn organization_info(
                 user_roles
                     .entry(entry.user_id)
                     .or_insert_with(Vec::new)
-                    .push(Role::try_from(entry.role).unwrap());
+                    .push(entry.role);
             }
         }
         Err(e) => {

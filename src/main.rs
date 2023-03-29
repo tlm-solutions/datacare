@@ -33,7 +33,9 @@ pub fn create_db_pool() -> DbPool {
     let default_postgres_pw_path = String::from("/run/secrets/postgres_password");
 
     let password_path = env::var("POSTGRES_PASSWORD_PATH").unwrap_or(default_postgres_pw_path);
-    let password = fs::read_to_string(password_path).expect("cannot read password file!");
+    let password = fs::read_to_string(password_path)
+        .map_err(|e| eprintln!("While trying to read password file: {:?}", e))
+        .expect("cannot read password file!");
 
     let database_url = format!(
         "postgres://{}:{}@{}:{}/{}",
@@ -65,7 +67,7 @@ pub fn get_prometheus() -> PrometheusMetrics {
     PrometheusMetricsBuilder::new("api")
         .endpoint("/metrics")
         .build()
-        .unwrap()
+        .expect("Failed to create prometheus metric endpoint")
 }
 
 #[actix_web::main]
@@ -81,8 +83,8 @@ async fn main() -> std::io::Result<()> {
     info!("Starting Data Collection Server ... ");
     let host = args.host.as_str();
     let port = args.port;
-    debug!("Listening on: {}:{}", host, port);
 
+    debug!("Listening on: {}:{}", host, port);
     let connection_pool = web::Data::new(create_db_pool());
     let secret_key = Key::generate();
     let prometheus = get_prometheus();
@@ -119,11 +121,11 @@ async fn main() -> std::io::Result<()> {
             .route("/user/{id}", web::delete().to(routes::user::user_delete))
             .route("/user/{id}", web::get().to(routes::user::user_info))
             .route(
-                "/user/{id}/permissions/{org-id}",
+                "/user/{id}/permissions/{org_id}",
                 web::get().to(routes::user::user_get_roles),
             )
             .route(
-                "/user/{id}/permissions/{org-id}",
+                "/user/{id}/permissions/{org_id}",
                 web::put().to(routes::user::user_set_roles),
             )
             .route("/region", web::post().to(routes::region::region_create))

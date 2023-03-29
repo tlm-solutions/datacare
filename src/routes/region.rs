@@ -20,35 +20,41 @@ use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// returnes the id of the newly created region
+/// Response with the id of the newly created region
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct RegionCreationResponse {
     pub id: usize,
 }
 
-/// holds all the necessary information that are required to create a new region
+/// Request to create a new region
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct CreateRegionRequest {
+    /// Region name
     pub name: String,
+    /// Transport company operating in the greater area (e.g. VVO)
     pub transport_company: String,
+    /// The direct operator of the transport (e.g. DVB)
     pub regional_company: Option<String>,
+    /// R09 Frequency in the region
     pub frequency: Option<i64>,
-    pub r09_type: Option<i64>,
+    /// Specific R09 type used in the region
+    pub r09_type: Option<R09Type>,
+    /// Physical layer encoding used in the region (e.g. VDV420, NEMO)
     pub encoding: Option<i32>,
 }
 
-/// edits a region
+/// Request to edit a region
 #[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub struct EditRegionRequest {
     pub name: String,
     pub transport_company: String,
     pub regional_company: Option<String>,
     pub frequency: Option<i64>,
-    pub r09_type: Option<i64>,
+    pub r09_type: Option<R09Type>,
     pub encoding: Option<i32>,
 }
 
-/// returns a lot more detailled information
+/// Returns verbose information about the region
 #[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub struct RegionInfoStruct {
     #[serde(flatten)]
@@ -58,12 +64,25 @@ pub struct RegionInfoStruct {
     pub stations: Vec<Station>,
 }
 
-/// will create a region if the currently authenticated user is an admin
+/// Creates a region, requires "admin" privilege
 #[utoipa::path(
     post,
     path = "/region",
+    params(
+        ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
+    ),
+    request_body(
+        content = CreateRegionRequest,
+        description = "holding old the data for a region",
+        content_type = "application/json"
+    ),
+    security(
+        ("user_roles" = ["admin"])
+    ),
     responses(
         (status = 200, description = "region was successfully created", body = RegionCreationResponse),
+        (status = 400, description = "given data is malformed"),
+        (status = 403, description = "user doesn't have admin role"),
         (status = 500, description = "postgres pool error"),
     ),
 )]
@@ -88,16 +107,6 @@ pub async fn region_create(
         return Err(ServerError::Forbidden);
     }
 
-    let r09_type: Option<R09Type> = match request.r09_type {
-        Some(x) => match R09Type::try_from(x) {
-            Ok(value) => Some(value),
-            Err(_) => {
-                return Err(ServerError::BadClientData);
-            }
-        },
-        None => None,
-    };
-
     match diesel::insert_into(regions)
         .values(&InsertRegion {
             id: None,
@@ -105,7 +114,7 @@ pub async fn region_create(
             transport_company: request.transport_company.clone(),
             regional_company: request.regional_company.clone(),
             frequency: request.frequency,
-            r09_type,
+            r09_type: request.r09_type.clone(),
             encoding: request.encoding,
             deactivated: false,
         })
@@ -123,6 +132,14 @@ pub async fn region_create(
 #[utoipa::path(
     get,
     path = "/region",
+    params(
+        ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
+    ),
+    request_body(
+        content = Option<ListRequest>,
+        description = "Pagination options",
+        content_type = "application/json"
+    ),
     responses(
         (status = 200, description = "list of regions", body = Vec<Region>),
         (status = 500, description = "postgres pool error"),
@@ -147,6 +164,7 @@ pub async fn region_list(
         None => ListRequest::default(),
     };
 
+    // counts the region so pageination knows how much more to fetch
     let count: i64 = match regions.count().get_result(&mut database_connection) {
         Ok(result) => result,
         Err(e) => {
@@ -155,7 +173,7 @@ pub async fn region_list(
         }
     };
 
-    // just SELECT * FROM regions;
+    // just SELECT * FROM regions LIMIT limit OFFSET offset ORDER BY name DESC;
     match regions
         .limit(query_params.limit)
         .offset(query_params.offset)
@@ -173,13 +191,26 @@ pub async fn region_list(
     }
 }
 
-/// Will overwrite a region with the new data on success it will return the updated region.
+/// Overwrites the region with supplied data. On success returns the updated region.
 #[utoipa::path(
-    put,
+    post,
     path = "/region/{id}",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = i64, Path, description = "Identitier of the region")
+    ),
+    request_body(
+        content = EditRegionRequest,
+        description = "Data with which the region will be overwritten",
+        content_type = "application/json"
+    ),
+    security(
+        ("user_roles" = ["admin"])
+    ),
     responses(
-        (status = 200, description = "successfully edited region", body = Region),
-        (status = 400, description = "invalid input data"),
+        (status = 200, description = "region successfully updated", body = Region),
+        (status = 400, description = "given data is malformed"),
+        (status = 403, description = "user doesn't have admin role"),
         (status = 500, description = "postgres pool error"),
     ),
 )]
@@ -216,24 +247,24 @@ pub async fn region_update(
             transport_company.eq(request.transport_company.clone()),
             regional_company.eq(request.regional_company.clone()),
             frequency.eq(request.frequency),
-            r09_type.eq(request.r09_type),
+            r09_type.eq(request.r09_type.clone()),
             encoding.eq(request.encoding),
         ))
         .get_result::<Region>(&mut database_connection)
     {
         Ok(return_region) => Ok(web::Json(return_region)),
         Err(e) => {
-            error!("cannot deactivate user because of {:?}", e);
+            error!("cannot update regions because of {:?}", e);
             Err(ServerError::InternalError)
         }
     }
 }
 
-/// This endpoint will fetch significantly more information about a region like
-/// which stations are inside the region and some core metrics like how many telegrams
-/// are received globally and rates for different time intervals.
+/// This endpoint fetches verbose information about a region, like which stations are in the
+/// region, and some core metrics. Metrics include how many telegrams are received in the region
+/// and receiving rates for different time intervals.
 ///
-/// the returned json will look something like this:
+/// the returned JSON looks something like this:
 ///
 ///´´´json
 ///{
@@ -249,10 +280,13 @@ pub async fn region_update(
 #[utoipa::path(
     get,
     path = "/region/{id}",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = i64, Path, description = "Identitier of the region")
+    ),
     responses(
-        (status = 200, description = "will return more detailled information about a region"),
-        (status = 400, description = "user suplied an unkown region id"),
-        (status = 500, description = "postgres pool error"),
+        (status = 200, description = "Region information returned successfully", body = RegionInfoStruct),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn region_info(
@@ -278,7 +312,7 @@ pub async fn region_info(
         Ok(found_region) => found_region,
         Err(e) => {
             debug!("error encountered while querying region: {:?}", e);
-            return Err(ServerError::BadClientData);
+            return Err(ServerError::InternalError);
         }
     };
 
@@ -366,14 +400,21 @@ pub async fn region_info(
     }))
 }
 
-/// will overwritte or delete the specified region
+/// Deactivates or deletes the specified region
 #[utoipa::path(
     delete,
     path = "/region/{id}",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = i64, Path, description = "Identitier of the region")
+    ),
+    security(
+        ("user_roles" = ["admin"])
+    ),
     responses(
-        (status = 200, description = "successfully edited region", body = Region),
-        (status = 400, description = "invalid input data"),
-        (status = 500, description = "postgres pool error"),
+        (status = 200, description = "Region successfully deleted or deactivated"),
+        (status = 403, description = "Unauthorized"),
+        (status = 500, description = "Postgres pool error"),
     ),
 )]
 pub async fn region_delete(
@@ -401,7 +442,6 @@ pub async fn region_delete(
     use tlms::schema::stations::dsl::stations;
     use tlms::schema::stations::region as station_region;
 
-    //use diesel::{select, dsl::exists};
     // TODO: exists ist currently completely broken fix with a later diesel release
     // check if there are any station with this region
     let exists = match stations
@@ -431,7 +471,7 @@ pub async fn region_delete(
         {
             Ok(_) => Ok(HttpResponse::Ok().finish()),
             Err(e) => {
-                error!("cannot deactivate user because of {:?}", e);
+                error!("cannot deactivate region because of {:?}", e);
                 Err(ServerError::InternalError)
             }
         }
@@ -439,7 +479,7 @@ pub async fn region_delete(
         match diesel::delete(regions.filter(id.eq(path.0))).execute(&mut database_connection) {
             Ok(_) => Ok(HttpResponse::Ok().finish()),
             Err(e) => {
-                error!("cannot deactivate user because of {:?}", e);
+                error!("cannot delete region because of {:?}", e);
                 Err(ServerError::InternalError)
             }
         }
