@@ -413,11 +413,11 @@ pub async fn user_list(
 /// Return a list of roles of the user in the organization
 #[utoipa::path(
     get,
-    path = "/user/{user-id}/permissions/{org-id}",
+    path = "/user/{user_id}/permissions/{org_id}",
     params(
         ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
-        ("user-id" = Uuid, Path, description = "identitier of the user"),
-        ("org-id" = Uuid, Path, description = "identitier of the organization")
+        ("user_id" = Uuid, Path, description = "identitier of the user"),
+        ("org_id" = Uuid, Path, description = "identitier of the organization")
     ),
     security(
         ("user_roles" = ["admin", "user", "Role::EditOrgUserRoles"])
@@ -474,11 +474,11 @@ pub async fn user_get_roles(
 /// Set a list of roles for a user in a organization
 #[utoipa::path(
     put,
-    path = "/user/{user-id}/permissions/{org-id}",
+    path = "/user/{user_id}/permissions/{org_id}",
     params(
         ("x-csrf-token" = String, Header, deprecated, description = "Current csrf token of user"),
-        ("user-id" = Uuid, Path, description = "identitier of the user"),
-        ("org-id" = Uuid, Path, description = "identitier of the organization")
+        ("user_id" = Uuid, Path, description = "identitier of the user"),
+        ("org_id" = Uuid, Path, description = "identitier of the organization")
     ),
     request_body(
         content = SetOfRoles,
