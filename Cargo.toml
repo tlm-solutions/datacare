@@ -27,7 +27,7 @@ env_logger = "0"
 log = "0"
 rand = "0"
 
-utoipa = { version = "3", features = ["actix_extras"] }
+utoipa = { version = "3", features = ["actix_extras", "uuid"] }
 utoipa-swagger-ui = { version = "3", features = ["actix-web"] }
 regex = "1"
 derive_more = "0"
