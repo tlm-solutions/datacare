@@ -5,6 +5,9 @@ pub mod station;
 pub mod trekkie_runs;
 pub mod user;
 
+use tlms::management::{Station, user::{User, Organization}};
+use tlms::locations::region::Region;
+
 use actix_web::{
     error,
     http::{header::ContentType, StatusCode},
@@ -123,6 +126,10 @@ pub struct DeactivateRequest {
 
     ),
     components(schemas(
+        Region,
+        User,
+        Station,
+        Organization,
         Stats,
         ListRequest,
         ListResponse<tlms::locations::region::Region>,
