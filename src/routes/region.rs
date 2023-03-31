@@ -346,7 +346,7 @@ pub async fn region_info(
     use tlms::schema::r09_telegrams::{id as telegram_id, region as telegram_region, time};
 
     // counts telegram from this regions over different time intervals
-    let telegram_count_last_day = match r09_telegrams
+    /*let telegram_count_last_day = match r09_telegrams
         .filter(telegram_region.eq(path.0))
         .filter(time.lt(now - 1_i32.days()))
         .select(diesel::dsl::count(telegram_id))
@@ -380,14 +380,14 @@ pub async fn region_info(
             error!("error while fetching the config {:?}", e);
             return Err(ServerError::InternalError);
         }
-    };
+    };*/
 
     Ok(web::Json(RegionInfoStruct {
         region: region_struct,
         stats: Stats {
-            telegram_count: telegram_count_global,
-            last_day_receive_rate: (telegram_count_last_day as f32 / 86400f32),
-            last_month_receive_rate: (telegram_count_last_month as f32 / 2592000f32),
+            telegram_count: 1000,
+            last_day_receive_rate: (10000 as f32 / 86400f32),
+            last_month_receive_rate: (1000 as f32 / 2592000f32),
         },
     }))
 }
