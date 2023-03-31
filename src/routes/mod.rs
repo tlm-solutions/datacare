@@ -7,6 +7,7 @@ pub mod user;
 
 use tlms::management::{Station, user::{User, Organization}};
 use tlms::locations::region::Region;
+use tlms::trekkie::TrekkieRun;
 use tlms::telegrams::r09::R09Type;
 
 use actix_web::{
@@ -134,8 +135,12 @@ pub struct DeactivateRequest {
         R09Type,
         Stats,
         ListRequest,
-        ListResponse<tlms::locations::region::Region>,
-        ListResponse<tlms::management::Station>,
+        TrekkieRun,
+        ListResponse<Region>,
+        ListResponse<Station>,
+        ListResponse<User>,
+        ListResponse<Organization>,
+        ListResponse<TrekkieRun>,
         auth::LoginRequest,
         user::RegisterUserRequest,
         user::ModifyUserRequest,
