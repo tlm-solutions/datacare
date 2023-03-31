@@ -3,7 +3,7 @@ use crate::{
     routes::{ListRequest, ListResponse, ServerError},
     DbPool,
 };
-use tlms::schema::trekkie_runs::dsl::trekkie_runs;
+use tlms::{schema::{trekkie_runs::dsl::trekkie_runs, gps_points}, locations::gps::GpsPoint};
 use tlms::trekkie::TrekkieRun;
 
 use actix_identity::Identity;
@@ -26,6 +26,25 @@ pub struct EditTrekkieRuns {
     pub line: i32,
     pub run: i32,
     pub region: i32,
+}
+
+/// struct for sending out very smol gps point in json
+#[derive(Serialize, Deserialize, ToSchema, Debug)]
+pub struct MiniGPS {
+    pub lat: f64,
+    pub lon: f64,
+    pub time: i64
+}
+
+/// gps detail information
+#[derive(Serialize, Deserialize, ToSchema, Debug)]
+pub struct TrekkieRunInfo {
+    /// trekkie run
+    #[serde(flatten)]
+    pub trekkie_run: TrekkieRun,
+    
+    /// list of gps points
+    pub gps: Vec<MiniGPS>
 }
 
 /// will return a list of all trekkie_runs
@@ -209,8 +228,7 @@ pub async fn trekkie_run_info(
     _req: HttpRequest,
     identity: Identity,
     path: web::Path<(Uuid,)>,
-    request: web::Json<EditTrekkieRuns>,
-) -> Result<HttpResponse, ServerError> {
+) -> Result<web::Json<TrekkieRunInfo>, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,
         Err(e) => {
@@ -221,21 +239,40 @@ pub async fn trekkie_run_info(
 
     let user_session = fetch_user(identity, &mut database_connection)?;
 
-    if !user_session.is_admin() {
+    use tlms::schema::trekkie_runs::id as trekkie_id;
+    use tlms::schema::gps_points::dsl::gps_points;
+    use tlms::schema::gps_points::trekkie_run as trekkie_id_gps;
+
+    let trekkie_run = match trekkie_runs
+        .filter(trekkie_id.eq(path.0))
+        .first::<TrekkieRun>(&mut database_connection)
+    {
+        Ok(trekkie_run) =>  trekkie_run,
+        Err(e) => {
+            error!("database error while listing trekkie_runs {:?}", e);
+            return Err(ServerError::InternalError);
+        }
+    };
+
+    if !(user_session.is_admin() || trekkie_run.owner == user_session.user.id) {
         return Err(ServerError::Forbidden);
     }
 
-    warn!("deleting trekkie runs {:?}", &request);
-
-    use tlms::schema::trekkie_runs::id as trekkie_id;
-
-    match diesel::delete(trekkie_runs.filter(trekkie_id.eq(path.0)))
-        .get_result::<TrekkieRun>(&mut database_connection)
-    {
-        Ok(_) => Ok(HttpResponse::Ok().finish()),
+    let gps = match gps_points.filter(trekkie_id_gps.eq(path.0)).load::<GpsPoint>(&mut database_connection) {
+        Ok(points) => points.iter().map(|x| {MiniGPS {
+            lat: x.lat,
+            lon: x.lon,
+            time: x.timestamp.timestamp()
+        }}).collect(),
         Err(e) => {
-            error!("cannot delete trekkie run because of {:?}", e);
-            Err(ServerError::InternalError)
+            error!("database error while listing trekkie_runs {:?}", e);
+            return Err(ServerError::InternalError);
         }
-    }
+    };
+
+    Ok(web::Json(TrekkieRunInfo {
+        trekkie_run,
+        gps
+    }))
+
 }

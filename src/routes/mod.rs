@@ -157,6 +157,8 @@ pub struct DeactivateRequest {
         station::ForceDeleteRequest,
         station::ApproveStationRequest,
         trekkie_runs::EditTrekkieRuns,
+        trekkie_runs::MiniGPS,
+        trekkie_runs::TrekkieRunInfo,
         organization::CreateOrganizationRequest,
         organization::UpdateOrganizationRequest,
         organization::ForceDeleteRequest,
