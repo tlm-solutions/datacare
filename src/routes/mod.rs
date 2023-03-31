@@ -5,7 +5,7 @@ pub mod station;
 pub mod trekkie_runs;
 pub mod user;
 
-use tlms::management::{Station, user::{User, Organization}};
+use tlms::management::{Station, user::{User, Organization, Role}};
 use tlms::locations::region::Region;
 use tlms::trekkie::TrekkieRun;
 use tlms::telegrams::r09::R09Type;
@@ -136,6 +136,7 @@ pub struct DeactivateRequest {
         Stats,
         ListRequest,
         TrekkieRun,
+        Role,
         ListResponse<Region>,
         ListResponse<Station>,
         ListResponse<User>,

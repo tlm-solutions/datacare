@@ -41,6 +41,14 @@ pub struct CreateRegionRequest {
     pub r09_type: Option<R09Type>,
     /// Physical layer encoding used in the region (e.g. VDV420, NEMO)
     pub encoding: Option<i32>,
+    /// lat of region
+    pub lat: f64,
+    /// lon of region
+    pub lon: f64,
+    /// zoom level 
+    pub zoom: f64,
+    /// in the station is work in progress or not 
+    pub work_in_progress: bool
 }
 
 /// Request to edit a region
@@ -52,6 +60,15 @@ pub struct EditRegionRequest {
     pub frequency: Option<i64>,
     pub r09_type: Option<R09Type>,
     pub encoding: Option<i32>,
+    /// lat of region
+    pub lat: f64,
+    /// lon of region
+    pub lon: f64,
+    /// zoom level 
+    pub zoom: f64,
+    /// in the station is work in progress or not 
+    pub work_in_progress: bool
+
 }
 
 /// Returns verbose information about the region
@@ -61,7 +78,6 @@ pub struct RegionInfoStruct {
     pub region: Region,
     #[serde(flatten)]
     pub stats: Stats,
-    pub stations: Vec<Station>,
 }
 
 /// Creates a region, requires "admin" privilege
@@ -117,6 +133,11 @@ pub async fn region_create(
             r09_type: request.r09_type.clone(),
             encoding: request.encoding,
             deactivated: false,
+            lat: request.lat,
+            lon: request.lon,
+            zoom: request.zoom,
+            work_in_progress: request.work_in_progress
+
         })
         .execute(&mut database_connection)
     {
@@ -238,7 +259,7 @@ pub async fn region_update(
     warn!("updating region {:?}", &request);
 
     use tlms::schema::regions::{
-        encoding, frequency, id, name, r09_type, regional_company, transport_company,
+        encoding, frequency, id, name, r09_type, regional_company, transport_company, lat, lon, zoom, work_in_progress
     };
 
     match diesel::update(regions.filter(id.eq(path.0)))
@@ -249,6 +270,10 @@ pub async fn region_update(
             frequency.eq(request.frequency),
             r09_type.eq(request.r09_type.clone()),
             encoding.eq(request.encoding),
+            lat.eq(request.lat),
+            lon.eq(request.lon),
+            zoom.eq(request.zoom),
+            work_in_progress.eq(request.work_in_progress)
         ))
         .get_result::<Region>(&mut database_connection)
     {
@@ -281,7 +306,6 @@ pub async fn region_update(
     get,
     path = "/region/{id}",
     params(
-        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
         ("id" = i64, Path, description = "Identitier of the region")
     ),
     responses(
@@ -292,7 +316,6 @@ pub async fn region_update(
 pub async fn region_info(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
-    identity: Identity,
     path: web::Path<(i64,)>,
 ) -> Result<web::Json<RegionInfoStruct>, ServerError> {
     let mut database_connection = match pool.get() {
@@ -316,38 +339,8 @@ pub async fn region_info(
         }
     };
 
-    let user_session = fetch_user(identity, &mut database_connection)?;
-
     use tlms::schema::stations::dsl::stations;
     use tlms::schema::stations::{owner, public, region as station_region};
-
-    // if the currently logged in user is an admin we return all stations in this region
-    // otherwise just the stations that are public or belong to this user.
-    let found_stations = if user_session.is_admin() {
-        match stations
-            .filter(station_region.eq(path.0))
-            .load::<Station>(&mut database_connection)
-        {
-            Ok(all_station) => all_station,
-            Err(e) => {
-                error!("error while fetching the config {:?}", e);
-                return Err(ServerError::InternalError);
-            }
-        }
-    } else {
-        match stations
-            .filter(station_region.eq(path.0))
-            .filter(public.eq(true).or(owner.eq(user_session.user.id)))
-            .load::<Station>(&mut database_connection)
-        {
-            Ok(all_station) => all_station,
-            Err(e) => {
-                error!("error while fetching the config {:?}", e);
-                return Err(ServerError::InternalError);
-            }
-        }
-    };
-
     use diesel::dsl::now;
     use tlms::schema::r09_telegrams::dsl::r09_telegrams;
     use tlms::schema::r09_telegrams::{id as telegram_id, region as telegram_region, time};
@@ -396,7 +389,6 @@ pub async fn region_info(
             last_day_receive_rate: (telegram_count_last_day as f32 / 86400f32),
             last_month_receive_rate: (telegram_count_last_month as f32 / 2592000f32),
         },
-        stations: found_stations,
     }))
 }
 
