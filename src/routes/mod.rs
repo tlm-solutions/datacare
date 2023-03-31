@@ -154,6 +154,7 @@ pub struct DeactivateRequest {
         organization::CreateOrganizationRequest,
         organization::UpdateOrganizationRequest,
         organization::ForceDeleteRequest,
+        organization::OrganizationInfoResponse
     ))
 )]
 pub struct ApiDoc;

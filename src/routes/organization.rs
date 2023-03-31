@@ -45,17 +45,17 @@ pub struct ForceDeleteRequest {
 }
 
 /// Response containing verbose information about organization
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct OrganizationInfoResponse {
     /// Information about the organization
     #[serde(flatten)]
     pub organization: Organization,
 
     /// List of associated organizations
-    pub stations: Vec<Station>,
+    pub stations: Vec<Station>
 
-    /// List of users in organization with their respective permissions
-    pub users: HashMap<Uuid, Vec<Role>>,
+    // List of users in organization with their respective permissions
+    //pub users: HashMap<Uuid, Vec<Role>>,
 }
 
 /// Creates an organization with the owner of the currently authenticated user. The owner can be
@@ -438,6 +438,6 @@ pub async fn organization_info(
     Ok(web::Json(OrganizationInfoResponse {
         organization: relevant_organization,
         stations: station_list,
-        users: user_roles,
+        //users: user_roles,
     }))
 }
