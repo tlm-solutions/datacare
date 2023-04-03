@@ -52,10 +52,8 @@ pub struct OrganizationInfoResponse {
     pub organization: Organization,
 
     /// List of associated organizations
-    pub stations: Vec<Station>
-
-    // List of users in organization with their respective permissions
-    //pub users: HashMap<Uuid, Vec<Role>>,
+    pub stations: Vec<Station>, // List of users in organization with their respective permissions
+                                //pub users: HashMap<Uuid, Vec<Role>>,
 }
 
 /// Creates an organization with the owner of the currently authenticated user. The owner can be

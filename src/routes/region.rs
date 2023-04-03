@@ -45,10 +45,10 @@ pub struct CreateRegionRequest {
     pub lat: f64,
     /// lon of region
     pub lon: f64,
-    /// zoom level 
+    /// zoom level
     pub zoom: f64,
-    /// in the station is work in progress or not 
-    pub work_in_progress: bool
+    /// in the station is work in progress or not
+    pub work_in_progress: bool,
 }
 
 /// Request to edit a region
@@ -64,11 +64,10 @@ pub struct EditRegionRequest {
     pub lat: f64,
     /// lon of region
     pub lon: f64,
-    /// zoom level 
+    /// zoom level
     pub zoom: f64,
-    /// in the station is work in progress or not 
-    pub work_in_progress: bool
-
+    /// in the station is work in progress or not
+    pub work_in_progress: bool,
 }
 
 /// Returns verbose information about the region
@@ -136,8 +135,7 @@ pub async fn region_create(
             lat: request.lat,
             lon: request.lon,
             zoom: request.zoom,
-            work_in_progress: request.work_in_progress
-
+            work_in_progress: request.work_in_progress,
         })
         .execute(&mut database_connection)
     {
@@ -259,7 +257,8 @@ pub async fn region_update(
     warn!("updating region {:?}", &request);
 
     use tlms::schema::regions::{
-        encoding, frequency, id, name, r09_type, regional_company, transport_company, lat, lon, zoom, work_in_progress
+        encoding, frequency, id, lat, lon, name, r09_type, regional_company, transport_company,
+        work_in_progress, zoom,
     };
 
     match diesel::update(regions.filter(id.eq(path.0)))
@@ -273,7 +272,7 @@ pub async fn region_update(
             lat.eq(request.lat),
             lon.eq(request.lon),
             zoom.eq(request.zoom),
-            work_in_progress.eq(request.work_in_progress)
+            work_in_progress.eq(request.work_in_progress),
         ))
         .get_result::<Region>(&mut database_connection)
     {
@@ -339,11 +338,11 @@ pub async fn region_info(
         }
     };
 
-    use tlms::schema::stations::dsl::stations;
-    use tlms::schema::stations::{owner, public, region as station_region};
     use diesel::dsl::now;
     use tlms::schema::r09_telegrams::dsl::r09_telegrams;
     use tlms::schema::r09_telegrams::{id as telegram_id, region as telegram_region, time};
+    use tlms::schema::stations::dsl::stations;
+    use tlms::schema::stations::{owner, public, region as station_region};
 
     // counts telegram from this regions over different time intervals
     /*let telegram_count_last_day = match r09_telegrams

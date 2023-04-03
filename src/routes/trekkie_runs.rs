@@ -3,8 +3,11 @@ use crate::{
     routes::{ListRequest, ListResponse, ServerError},
     DbPool,
 };
-use tlms::{schema::{trekkie_runs::dsl::trekkie_runs, gps_points}, locations::gps::GpsPoint};
 use tlms::trekkie::TrekkieRun;
+use tlms::{
+    locations::gps::GpsPoint,
+    schema::{gps_points, trekkie_runs::dsl::trekkie_runs},
+};
 
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, HttpResponse};
@@ -33,7 +36,7 @@ pub struct EditTrekkieRuns {
 pub struct MiniGPS {
     pub lat: f64,
     pub lon: f64,
-    pub time: i64
+    pub time: i64,
 }
 
 /// gps detail information
@@ -42,9 +45,9 @@ pub struct TrekkieRunInfo {
     /// trekkie run
     #[serde(flatten)]
     pub trekkie_run: TrekkieRun,
-    
+
     /// list of gps points
-    pub gps: Vec<MiniGPS>
+    pub gps: Vec<MiniGPS>,
 }
 
 /// will return a list of all trekkie_runs
@@ -73,37 +76,65 @@ pub async fn trekkie_run_list(
     // fetch user session
     let session_user = fetch_user(identity, &mut database_connection)?;
 
-    if !session_user.is_admin() {
-        return Err(ServerError::Forbidden);
-    }
-
     // gets the query parameters out of the request
     let query_params: ListRequest = match optional_params {
         Some(request) => request.into_inner(),
         None => ListRequest::default(),
     };
 
-    let count: i64 = match trekkie_runs.count().get_result(&mut database_connection) {
-        Ok(result) => result,
-        Err(e) => {
-            error!("database error {:?}", e);
-            return Err(ServerError::InternalError);
-        }
-    };
+    if session_user.is_admin() {
+        let count: i64 = match trekkie_runs.count().get_result(&mut database_connection) {
+            Ok(result) => result,
+            Err(e) => {
+                error!("database error {:?}", e);
+                return Err(ServerError::InternalError);
+            }
+        };
 
-    match trekkie_runs
-        .limit(query_params.limit)
-        .offset(query_params.offset)
-        .order(tlms::schema::trekkie_runs::line)
-        .load::<TrekkieRun>(&mut database_connection)
-    {
-        Ok(trekkie_list) => Ok(web::Json(ListResponse {
-            count,
-            elements: trekkie_list,
-        })),
-        Err(e) => {
-            error!("database error while listing trekkie_runs {:?}", e);
-            Err(ServerError::InternalError)
+        match trekkie_runs
+            .limit(query_params.limit)
+            .offset(query_params.offset)
+            .order(tlms::schema::trekkie_runs::line)
+            .load::<TrekkieRun>(&mut database_connection)
+        {
+            Ok(trekkie_list) => Ok(web::Json(ListResponse {
+                count,
+                elements: trekkie_list,
+            })),
+            Err(e) => {
+                error!("database error while listing trekkie_runs {:?}", e);
+                Err(ServerError::InternalError)
+            }
+        }
+    } else {
+        let count: i64 = match trekkie_runs
+            .filter(owner.eq(session_user.user.id))
+            .count()
+            .get_result(&mut database_connection)
+        {
+            Ok(result) => result,
+            Err(e) => {
+                error!("database error {:?}", e);
+                return Err(ServerError::InternalError);
+            }
+        };
+
+        use tlms::schema::trekkie_runs::dsl::owner;
+        match trekkie_runs
+            .filter(owner.eq(session_user.user.id))
+            .limit(query_params.limit)
+            .offset(query_params.offset)
+            .order(tlms::schema::trekkie_runs::line)
+            .load::<TrekkieRun>(&mut database_connection)
+        {
+            Ok(trekkie_list) => Ok(web::Json(ListResponse {
+                count,
+                elements: trekkie_list,
+            })),
+            Err(e) => {
+                error!("database error while listing trekkie_runs {:?}", e);
+                Err(ServerError::InternalError)
+            }
         }
     }
 }
@@ -239,15 +270,15 @@ pub async fn trekkie_run_info(
 
     let user_session = fetch_user(identity, &mut database_connection)?;
 
-    use tlms::schema::trekkie_runs::id as trekkie_id;
     use tlms::schema::gps_points::dsl::gps_points;
     use tlms::schema::gps_points::trekkie_run as trekkie_id_gps;
+    use tlms::schema::trekkie_runs::id as trekkie_id;
 
     let trekkie_run = match trekkie_runs
         .filter(trekkie_id.eq(path.0))
         .first::<TrekkieRun>(&mut database_connection)
     {
-        Ok(trekkie_run) =>  trekkie_run,
+        Ok(trekkie_run) => trekkie_run,
         Err(e) => {
             error!("database error while listing trekkie_runs {:?}", e);
             return Err(ServerError::InternalError);
@@ -258,21 +289,23 @@ pub async fn trekkie_run_info(
         return Err(ServerError::Forbidden);
     }
 
-    let gps = match gps_points.filter(trekkie_id_gps.eq(path.0)).load::<GpsPoint>(&mut database_connection) {
-        Ok(points) => points.iter().map(|x| {MiniGPS {
-            lat: x.lat,
-            lon: x.lon,
-            time: x.timestamp.timestamp()
-        }}).collect(),
+    let gps = match gps_points
+        .filter(trekkie_id_gps.eq(path.0))
+        .load::<GpsPoint>(&mut database_connection)
+    {
+        Ok(points) => points
+            .iter()
+            .map(|x| MiniGPS {
+                lat: x.lat,
+                lon: x.lon,
+                time: x.timestamp.timestamp(),
+            })
+            .collect(),
         Err(e) => {
             error!("database error while listing trekkie_runs {:?}", e);
             return Err(ServerError::InternalError);
         }
     };
 
-    Ok(web::Json(TrekkieRunInfo {
-        trekkie_run,
-        gps
-    }))
-
+    Ok(web::Json(TrekkieRunInfo { trekkie_run, gps }))
 }

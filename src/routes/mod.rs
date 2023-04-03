@@ -5,10 +5,13 @@ pub mod station;
 pub mod trekkie_runs;
 pub mod user;
 
-use tlms::management::{Station, user::{User, Organization, Role}};
 use tlms::locations::region::Region;
-use tlms::trekkie::TrekkieRun;
+use tlms::management::{
+    user::{Organization, Role, User},
+    Station,
+};
 use tlms::telegrams::r09::R09Type;
+use tlms::trekkie::TrekkieRun;
 
 use actix_web::{
     error,
@@ -120,6 +123,7 @@ pub struct DeactivateRequest {
         trekkie_runs::trekkie_run_list,
         trekkie_runs::trekkie_run_update,
         trekkie_runs::trekkie_run_delete,
+        trekkie_runs::trekkie_run_info,
         organization::orga_create,
         organization::orga_list,
         organization::organization_update,
