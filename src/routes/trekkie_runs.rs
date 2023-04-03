@@ -36,7 +36,7 @@ pub struct EditTrekkieRuns {
 pub struct MiniGPS {
     pub lat: f64,
     pub lon: f64,
-    pub time: i64,
+    pub time: NaiveDateTime,
 }
 
 /// gps detail information
@@ -298,7 +298,7 @@ pub async fn trekkie_run_info(
             .map(|x| MiniGPS {
                 lat: x.lat,
                 lon: x.lon,
-                time: x.timestamp.timestamp(),
+                time: x.timestamp,
             })
             .collect(),
         Err(e) => {
