@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod correlate;
 pub mod organization;
 pub mod region;
 pub mod station;
@@ -128,8 +129,9 @@ pub struct DeactivateRequest {
         organization::orga_list,
         organization::organization_update,
         organization::organization_delete,
-        organization::organization_info
-
+        organization::organization_info,
+        correlate::correlate_run,
+        correlate::correlate_all
     ),
     components(schemas(
         Region,
@@ -166,7 +168,10 @@ pub struct DeactivateRequest {
         organization::CreateOrganizationRequest,
         organization::UpdateOrganizationRequest,
         organization::ForceDeleteRequest,
-        organization::OrganizationInfoResponse
+        organization::OrganizationInfoResponse,
+        correlate::CorrelatePlease,
+        correlate::CorrelateAllRequest,
+        correlate::CorrelateResponse,
     ))
 )]
 pub struct ApiDoc;
