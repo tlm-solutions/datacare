@@ -4,10 +4,7 @@ use crate::{
     DbPool,
 };
 use tlms::trekkie::TrekkieRun;
-use tlms::{
-    locations::gps::GpsPoint,
-    schema::{gps_points, trekkie_runs::dsl::trekkie_runs},
-};
+use tlms::{locations::gps::GpsPoint, schema::trekkie_runs::dsl::trekkie_runs};
 
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, HttpResponse};
