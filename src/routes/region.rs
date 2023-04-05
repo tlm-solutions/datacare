@@ -11,9 +11,7 @@ use tlms::telegrams::r09::R09Type;
 
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, HttpResponse};
-use diesel::dsl::IntervalDsl;
 use diesel::query_dsl::RunQueryDsl;
-use diesel::BoolExpressionMethods;
 use diesel::{ExpressionMethods, QueryDsl};
 
 use log::{debug, error, warn};
@@ -338,55 +336,12 @@ pub async fn region_info(
         }
     };
 
-    use diesel::dsl::now;
-    use tlms::schema::r09_telegrams::dsl::r09_telegrams;
-    use tlms::schema::r09_telegrams::{id as telegram_id, region as telegram_region, time};
-    use tlms::schema::stations::dsl::stations;
-    use tlms::schema::stations::{owner, public, region as station_region};
-
-    // counts telegram from this regions over different time intervals
-    /*let telegram_count_last_day = match r09_telegrams
-        .filter(telegram_region.eq(path.0))
-        .filter(time.lt(now - 1_i32.days()))
-        .select(diesel::dsl::count(telegram_id))
-        .first::<i64>(&mut database_connection)
-    {
-        Ok(telegram_count) => telegram_count,
-        Err(e) => {
-            error!("error while fetching the config {:?}", e);
-            return Err(ServerError::InternalError);
-        }
-    };
-    let telegram_count_last_month = match r09_telegrams
-        .filter(telegram_region.eq(path.0))
-        .filter(time.lt(now - 30_i32.days()))
-        .select(diesel::dsl::count(telegram_id))
-        .first::<i64>(&mut database_connection)
-    {
-        Ok(telegram_count) => telegram_count,
-        Err(e) => {
-            error!("error while fetching the config {:?}", e);
-            return Err(ServerError::InternalError);
-        }
-    };
-    let telegram_count_global = match r09_telegrams
-        .filter(telegram_region.eq(path.0))
-        .select(diesel::dsl::count(telegram_id))
-        .first::<i64>(&mut database_connection)
-    {
-        Ok(telegram_count) => telegram_count,
-        Err(e) => {
-            error!("error while fetching the config {:?}", e);
-            return Err(ServerError::InternalError);
-        }
-    };*/
-
     Ok(web::Json(RegionInfoStruct {
         region: region_struct,
         stats: Stats {
             telegram_count: 1000,
-            last_day_receive_rate: (10000 as f32 / 86400f32),
-            last_month_receive_rate: (1000 as f32 / 2592000f32),
+            last_day_receive_rate: (10000_f32 / 86400f32),
+            last_month_receive_rate: (1000_f32 / 2592000f32),
         },
     }))
 }

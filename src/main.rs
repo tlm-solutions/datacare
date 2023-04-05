@@ -155,10 +155,7 @@ async fn main() -> std::io::Result<()> {
                 "/station/{id}/approve",
                 web::post().to(routes::station::station_approve),
             )
-            .route(
-                "/trekkie",
-                web::get().to(routes::trekkie::trekkie_run_list),
-            )
+            .route("/trekkie", web::get().to(routes::trekkie::trekkie_run_list))
             .route(
                 "/trekkie/{id}",
                 web::put().to(routes::trekkie::trekkie_run_update),
@@ -170,6 +167,14 @@ async fn main() -> std::io::Result<()> {
             .route(
                 "/trekkie/{id}",
                 web::get().to(routes::trekkie::trekkie_run_info),
+            )
+            .route(
+                "/trekkie/{id}/correlate",
+                web::get().to(routes::trekkie::correlate::trekkie_correlate_get),
+            )
+            .route(
+                "/trekkie/{id}/correlate",
+                web::post().to(routes::trekkie::correlate::correlate_run),
             )
             .route(
                 "/organization",
@@ -190,6 +195,14 @@ async fn main() -> std::io::Result<()> {
             .route(
                 "/organization/{id}",
                 web::get().to(routes::organization::organization_info),
+            )
+            .route(
+                "/run/correlate_all",
+                web::post().to(routes::correlate::correlate_all),
+            )
+            .route(
+                "/locations/update_all",
+                web::post().to(routes::correlate::update_all_transmission_locations),
             )
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")

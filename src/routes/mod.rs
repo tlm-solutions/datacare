@@ -1,15 +1,12 @@
 pub mod auth;
+pub mod correlate;
 pub mod organization;
 pub mod region;
 pub mod station;
 pub mod trekkie;
 pub mod user;
 
-use tlms::locations::{
-    region::Region,
-    TransmissionLocation,
-    TransmissionLocationRaw
-};
+use tlms::locations::{region::Region, TransmissionLocation, TransmissionLocationRaw};
 use tlms::management::{
     user::{Organization, Role, User},
     Station,
@@ -129,12 +126,13 @@ pub struct DeactivateRequest {
         trekkie::trekkie_run_delete,
         trekkie::trekkie_run_info,
         trekkie::correlate::trekkie_correlate_get,
+        trekkie::correlate::correlate_run,
         organization::orga_create,
         organization::orga_list,
         organization::organization_update,
         organization::organization_delete,
-        organization::organization_info
-
+        organization::organization_info,
+        correlate::correlate_all
     ),
     components(schemas(
         Region,
@@ -173,7 +171,10 @@ pub struct DeactivateRequest {
         organization::CreateOrganizationRequest,
         organization::UpdateOrganizationRequest,
         organization::ForceDeleteRequest,
-        organization::OrganizationInfoResponse
+        organization::OrganizationInfoResponse,
+        correlate::CorrelatePlease,
+        correlate::CorrelateAllRequest,
+        correlate::CorrelateResponse,
     ))
 )]
 pub struct ApiDoc;
