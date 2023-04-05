@@ -157,19 +157,19 @@ async fn main() -> std::io::Result<()> {
             )
             .route(
                 "/trekkie",
-                web::get().to(routes::trekkie_runs::trekkie_run_list),
+                web::get().to(routes::trekkie::trekkie_run_list),
             )
             .route(
                 "/trekkie/{id}",
-                web::put().to(routes::trekkie_runs::trekkie_run_update),
+                web::put().to(routes::trekkie::trekkie_run_update),
             )
             .route(
                 "/trekkie/{id}",
-                web::delete().to(routes::trekkie_runs::trekkie_run_delete),
+                web::delete().to(routes::trekkie::trekkie_run_delete),
             )
             .route(
                 "/trekkie/{id}",
-                web::get().to(routes::trekkie_runs::trekkie_run_info),
+                web::get().to(routes::trekkie::trekkie_run_info),
             )
             .route(
                 "/organization",

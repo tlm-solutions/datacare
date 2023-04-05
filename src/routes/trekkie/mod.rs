@@ -1,3 +1,5 @@
+pub mod correlate;
+
 use crate::{
     routes::auth::fetch_user,
     routes::{ListRequest, ListResponse, ServerError},
