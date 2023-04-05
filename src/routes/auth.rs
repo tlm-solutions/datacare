@@ -128,7 +128,7 @@ pub async fn user_login(
 
 /// removes the current session and therefore logging out the user
 #[utoipa::path(
-    get,
+    post,
     path = "/auth/logout",
     responses(
         (status = 200, description = "returnes old measurements"),

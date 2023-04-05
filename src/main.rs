@@ -2,6 +2,7 @@
 mod routes;
 mod structs;
 
+use actix_identity::config::LogoutBehaviour;
 use structs::Args;
 
 use clap::Parser;
@@ -23,6 +24,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use std::env;
 use std::fs;
+use std::time::Duration;
 
 type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
@@ -99,7 +101,12 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(cors)
             .wrap(prometheus.clone())
-            .wrap(IdentityMiddleware::default())
+            .wrap(
+                IdentityMiddleware::builder()
+                    .logout_behaviour(LogoutBehaviour::PurgeSession)
+                    .visit_deadline(Some(Duration::from_secs(60 * 60 * 24 * 3)))
+                    .build(),
+            )
             .wrap(Logger::default())
             .wrap(
                 SessionMiddleware::builder(
