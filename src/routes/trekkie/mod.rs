@@ -1,3 +1,6 @@
+pub mod correlate;
+pub mod utils;
+
 use crate::{
     routes::auth::fetch_user,
     routes::{ListRequest, ListResponse, ServerError},
@@ -51,6 +54,18 @@ pub struct TrekkieRunInfo {
 #[utoipa::path(
     get,
     path = "/trekkie",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = Uuid, Path, description = "Trekkie Run identifier")
+    ),
+    request_body(
+        content = Option<ListRequest>,
+        description = "information for pageination of trekkie runs",
+        content_type = "application/json"
+    ),
+    security(
+        ("user_roles" = ["admin", "user"])
+    ),
     responses(
         (status = 200, description = "list of trekkie runs", body = Vec<TrekkieRun>),
         (status = 500, description = "postgres pool error"),
@@ -141,9 +156,22 @@ pub async fn trekkie_run_list(
 #[utoipa::path(
     put,
     path = "/trekkie/{id}",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = Uuid, Path, description = "Trekkie Run identifier")
+    ),
+    request_body(
+        content = EditTrekkieRuns,
+        description = "Overwritting start / end times, line and run.",
+        content_type = "application/json"
+    ),
+    security(
+        ("user_roles" = ["admin", "user"])
+    ),
     responses(
         (status = 200, description = "successfully edited trekkie run", body = TrekkieRun),
         (status = 400, description = "invalid input data"),
+        (status = 403, description = "User doesn't have correct permissions"),
         (status = 500, description = "postgres pool error"),
     ),
 )]
@@ -199,9 +227,17 @@ pub async fn trekkie_run_update(
 #[utoipa::path(
     delete,
     path = "/trekkie/{id}",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = Uuid, Path, description = "Trekkie Run identifier")
+    ),
+    security(
+        ("user_roles" = ["admin", "user"])
+    ),
     responses(
         (status = 200, description = "successfully deleted trekkie run"),
         (status = 400, description = "invalid input data"),
+        (status = 403, description = "User doesn't have correct permissions"),
         (status = 500, description = "postgres pool error"),
     ),
 )]
@@ -210,7 +246,6 @@ pub async fn trekkie_run_delete(
     _req: HttpRequest,
     identity: Identity,
     path: web::Path<(Uuid,)>,
-    request: web::Json<EditTrekkieRuns>,
 ) -> Result<HttpResponse, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,
@@ -225,8 +260,6 @@ pub async fn trekkie_run_delete(
     if !user_session.is_admin() {
         return Err(ServerError::Forbidden);
     }
-
-    warn!("deleting trekkie runs {:?}", &request);
 
     use tlms::schema::trekkie_runs::id as trekkie_id;
 
@@ -245,9 +278,17 @@ pub async fn trekkie_run_delete(
 #[utoipa::path(
     get,
     path = "/trekkie/{id}",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = Uuid, Path, description = "Trekkie Run identifier")
+    ),
+    security(
+        ("user_roles" = ["admin", "user"])
+    ),
     responses(
         (status = 200, description = "successfully return trekkie run information"),
         (status = 400, description = "invalid input data"),
+        (status = 403, description = "User doesn't have correct permissions"),
         (status = 500, description = "postgres pool error"),
     ),
 )]

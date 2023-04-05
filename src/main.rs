@@ -155,21 +155,26 @@ async fn main() -> std::io::Result<()> {
                 "/station/{id}/approve",
                 web::post().to(routes::station::station_approve),
             )
+            .route("/trekkie", web::get().to(routes::trekkie::trekkie_run_list))
             .route(
-                "/trekkie",
-                web::get().to(routes::trekkie_runs::trekkie_run_list),
+                "/trekkie/{id}",
+                web::put().to(routes::trekkie::trekkie_run_update),
             )
             .route(
                 "/trekkie/{id}",
-                web::put().to(routes::trekkie_runs::trekkie_run_update),
+                web::delete().to(routes::trekkie::trekkie_run_delete),
             )
             .route(
                 "/trekkie/{id}",
-                web::delete().to(routes::trekkie_runs::trekkie_run_delete),
+                web::get().to(routes::trekkie::trekkie_run_info),
             )
             .route(
-                "/trekkie/{id}",
-                web::get().to(routes::trekkie_runs::trekkie_run_info),
+                "/trekkie/{id}/correlate",
+                web::get().to(routes::trekkie::correlate::trekkie_correlate_get),
+            )
+            .route(
+                "/trekkie/{id}/correlate",
+                web::post().to(routes::trekkie::correlate::correlate_run),
             )
             .route(
                 "/organization",
@@ -190,10 +195,6 @@ async fn main() -> std::io::Result<()> {
             .route(
                 "/organization/{id}",
                 web::get().to(routes::organization::organization_info),
-            )
-            .route(
-                "/run/correlate",
-                web::post().to(routes::correlate::correlate_run),
             )
             .route(
                 "/run/correlate_all",

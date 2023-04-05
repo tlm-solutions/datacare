@@ -3,10 +3,10 @@ pub mod correlate;
 pub mod organization;
 pub mod region;
 pub mod station;
-pub mod trekkie_runs;
+pub mod trekkie;
 pub mod user;
 
-use tlms::locations::region::Region;
+use tlms::locations::{region::Region, TransmissionLocation, TransmissionLocationRaw};
 use tlms::management::{
     user::{Organization, Role, User},
     Station,
@@ -121,16 +121,17 @@ pub struct DeactivateRequest {
         station::station_update,
         station::station_delete,
         station::station_approve,
-        trekkie_runs::trekkie_run_list,
-        trekkie_runs::trekkie_run_update,
-        trekkie_runs::trekkie_run_delete,
-        trekkie_runs::trekkie_run_info,
+        trekkie::trekkie_run_list,
+        trekkie::trekkie_run_update,
+        trekkie::trekkie_run_delete,
+        trekkie::trekkie_run_info,
+        trekkie::correlate::trekkie_correlate_get,
+        trekkie::correlate::correlate_run,
         organization::orga_create,
         organization::orga_list,
         organization::organization_update,
         organization::organization_delete,
         organization::organization_info,
-        correlate::correlate_run,
         correlate::correlate_all
     ),
     components(schemas(
@@ -142,6 +143,8 @@ pub struct DeactivateRequest {
         Stats,
         ListRequest,
         TrekkieRun,
+        TransmissionLocation,
+        TransmissionLocationRaw,
         Role,
         ListResponse<Region>,
         ListResponse<Station>,
@@ -162,9 +165,9 @@ pub struct DeactivateRequest {
         station::SearchStationRequest,
         station::ForceDeleteRequest,
         station::ApproveStationRequest,
-        trekkie_runs::EditTrekkieRuns,
-        trekkie_runs::MiniGPS,
-        trekkie_runs::TrekkieRunInfo,
+        trekkie::EditTrekkieRuns,
+        trekkie::MiniGPS,
+        trekkie::TrekkieRunInfo,
         organization::CreateOrganizationRequest,
         organization::UpdateOrganizationRequest,
         organization::ForceDeleteRequest,

@@ -1,16 +1,14 @@
 use std::collections::HashMap;
 
 use crate::routes::auth::fetch_user;
+use crate::routes::trekkie::utils::correlate_single_run;
 use crate::routes::ServerError;
 use crate::DbPool;
 
 use diesel::upsert::on_constraint;
-use lofi::correlate::correlate_trekkie_run;
-use tlms::locations::gps::GpsPoint;
 use tlms::locations::{
     InsertTransmissionLocation, InsertTransmissionLocationRaw, TransmissionLocationRaw,
 };
-use tlms::telegrams::r09::R09SaveTelegram;
 use tlms::trekkie::TrekkieRun;
 
 use actix_identity::Identity;
@@ -18,7 +16,7 @@ use actix_web::{web, HttpRequest};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use futures::stream::futures_unordered::FuturesUnordered;
 use futures::stream::StreamExt;
-use log::{error, info, warn};
+use log::error;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -151,87 +149,6 @@ pub async fn update_all_transmission_locations(
     Ok(web::Json(UpdateAllLocationsResponse { rows_affected }))
 }
 
-/// Private function that does the dirty correlation work.
-async fn correlate_single_run(
-    run: TrekkieRun,
-    pool: &web::Data<DbPool>,
-    corr_window: i64,
-) -> Result<Vec<InsertTransmissionLocationRaw>, ServerError> {
-    // get connection from the pool
-    let mut database_connection = match pool.get() {
-        Ok(conn) => conn,
-        Err(e) => {
-            error!("cannot get connection from connection pool {:?}", e);
-            return Err(ServerError::InternalError);
-        }
-    };
-
-    use tlms::schema::gps_points::dsl::gps_points;
-    use tlms::schema::gps_points::trekkie_run;
-    let queried_gps: Vec<GpsPoint> = match gps_points
-        .filter(trekkie_run.eq(run.id))
-        .load(&mut database_connection)
-    {
-        Ok(points) => points,
-        Err(e) => {
-            error!(
-                "while fetching gps points for run id {id}: {e}",
-                id = run.id
-            );
-            return Err(ServerError::InternalError);
-        }
-    };
-
-    // query r09 telegrams matching the timeframe of the run
-    use tlms::schema::r09_telegrams::dsl::r09_telegrams;
-
-    use tlms::schema::r09_telegrams::line as telegram_line;
-    use tlms::schema::r09_telegrams::run_number as telegram_run;
-    use tlms::schema::r09_telegrams::time as telegram_time;
-    let telegrams: Vec<R09SaveTelegram> = match r09_telegrams
-        .filter(telegram_time.ge(run.start_time))
-        .filter(telegram_time.le(run.end_time))
-        .filter(telegram_line.eq(run.line))
-        .filter(telegram_run.eq(run.run))
-        .load::<R09SaveTelegram>(&mut database_connection)
-    {
-        Ok(t) => t,
-        Err(e) => {
-            error!(
-                "While trying to query the telegrams matching {run}: {e}",
-                run = run.id
-            );
-            return Err(ServerError::InternalError);
-        }
-    };
-
-    // corrrelate
-    let locs = match correlate_trekkie_run(&telegrams, queried_gps, corr_window, run.id, run.owner)
-    {
-        Ok(l) => l,
-        Err(_) => {
-            return Err(ServerError::InternalError);
-        }
-    };
-    // Update correlated flag in the trekkie_runs db
-    use tlms::schema::trekkie_runs::correlated as trekkie_corr_flag;
-    use tlms::schema::trekkie_runs::dsl::trekkie_runs;
-    use tlms::schema::trekkie_runs::id as run_id;
-    match diesel::update(trekkie_runs)
-        .filter(run_id.eq(run.id))
-        .set(trekkie_corr_flag.eq(true))
-        .execute(&mut database_connection)
-    {
-        Ok(ok) => ok,
-        Err(e) => {
-            error!("while trying to set `correlated` flag in trekkie_runs: {e:?}");
-            return Err(ServerError::InternalError);
-        }
-    };
-
-    Ok(locs)
-}
-
 /// This endpoint correlates all the runs. If appropriate flag is set, ignores "correlated" flag,
 /// and correlates **everything**.
 #[utoipa::path(
@@ -342,115 +259,5 @@ pub async fn correlate_all(
     Ok(web::Json(CorrelateResponse {
         success: true,
         new_raw_transmission_locations: affected_rows as i64,
-    }))
-}
-
-/// This endpoint would correlate runs for given user id. For regular user only own runs
-/// can be correlated, for admin - any run for any user
-#[utoipa::path(
-    post,
-    path = "/run/correlate",
-    responses(
-        (status = 200, description = "Correlation Successful", body = CorrelateResponse),
-        (status = 401, description = "Unauthorized"),
-        (status = 403, description = "Forbidden"),
-        (status = 500, description = "Interal Error"),
-        (status = 501, description = "Not Implemented"),
-    ),
-)]
-pub async fn correlate_run(
-    pool: web::Data<DbPool>,
-    user: Identity,
-    _req: HttpRequest,
-    corr_request: web::Json<CorrelatePlease>,
-) -> Result<web::Json<CorrelateResponse>, ServerError> {
-    // get connection from the pool
-    let mut database_connection = match pool.get() {
-        Ok(conn) => conn,
-        Err(e) => {
-            error!("cannot get connection from connection pool {:?}", e);
-            return Err(ServerError::InternalError);
-        }
-    };
-
-    // Get the user and privileges
-    let req_user = fetch_user(user, &mut database_connection)?;
-
-    use tlms::schema::trekkie_runs::dsl::trekkie_runs;
-    use tlms::schema::trekkie_runs::id as run_id;
-    let run: TrekkieRun = match trekkie_runs
-        .filter(run_id.eq(corr_request.run_id))
-        .first(&mut database_connection)
-    {
-        Ok(r) => r,
-        Err(e) => {
-            error!("While trying to query for run {}: {e}", corr_request.run_id);
-            return Err(ServerError::InternalError);
-        }
-    };
-
-    if run.owner != req_user.user.id && !req_user.is_admin() {
-        warn!(
-            "naughty boy: user {} tried to access run owned by {}!",
-            req_user.user.id, run.owner
-        );
-        return Err(ServerError::Forbidden);
-    }
-
-    if run.correlated {
-        info!(
-            "User {usr} requested to correlate trekkie run {r}, which is already correlated.",
-            usr = req_user.user.id,
-            r = run.id
-        );
-        warn!("Run already correlated. Correlation step skipped.");
-
-        return Ok(web::Json(CorrelateResponse {
-            success: true,
-            new_raw_transmission_locations: 0,
-        }));
-    }
-
-    let corr_window = match corr_request.corr_window {
-        Some(x) => x,
-        None => lofi::correlate::DEFAULT_CORRELATION_WINDOW,
-    };
-
-    // corrrelate
-    let locs = match correlate_single_run(run, &pool, corr_window).await {
-        Ok(l) => l,
-        Err(e) => {
-            error!("while trying to correlate run: {e}");
-            return Err(e);
-        }
-    };
-
-    // Insert raw transmission locations into the DB
-    use tlms::schema::r09_transmission_locations_raw::dsl::r09_transmission_locations_raw;
-    let updated_rows = match diesel::insert_into(r09_transmission_locations_raw)
-        .values(&locs)
-        .execute(&mut database_connection)
-    {
-        Ok(r) => r,
-        Err(_) => return Err(ServerError::InternalError),
-    };
-
-    // Update correlated flag in the trekkie_runs db
-    use tlms::schema::trekkie_runs::correlated as trekkie_corr_flag;
-    match diesel::update(trekkie_runs)
-        .filter(run_id.eq(corr_request.run_id))
-        .set(trekkie_corr_flag.eq(true))
-        .execute(&mut database_connection)
-    {
-        Ok(ok) => ok,
-        Err(e) => {
-            error!("while trying to set `correlated` flag in trekkie_runs: {e:?}");
-            return Err(ServerError::InternalError);
-        }
-    };
-
-    Ok(web::Json(CorrelateResponse {
-        success: true,
-        new_raw_transmission_locations: updated_rows as i64,
     }))
 }
