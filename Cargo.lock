@@ -2550,7 +2550,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 [[package]]
 name = "tlms"
 version = "0.9.0"
-source = "git+https://github.com/tlm-solutions/tlms.rs#abd4a31d7d68176a32180342a69d164f1b5873ec"
+source = "git+https://github.com/tlm-solutions/tlms.rs#e18498af4dc5da67773ed93ce7a2d227312013d9"
 dependencies = [
  "chrono",
  "csv",
