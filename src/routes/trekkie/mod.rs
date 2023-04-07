@@ -23,7 +23,9 @@ use uuid::Uuid;
 /// edits a region
 #[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub struct EditTrekkieRuns {
+    #[serde(with = "tlms::time_serializer")]
     pub start_time: NaiveDateTime,
+    #[serde(with = "tlms::time_serializer")]
     pub end_time: NaiveDateTime,
     pub line: i32,
     pub run: i32,
@@ -35,6 +37,7 @@ pub struct EditTrekkieRuns {
 pub struct MiniGPS {
     pub lat: f64,
     pub lon: f64,
+    #[serde(with = "tlms::time_serializer")]
     pub time: NaiveDateTime,
 }
 
