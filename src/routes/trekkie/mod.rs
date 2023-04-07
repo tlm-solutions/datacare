@@ -23,7 +23,6 @@ use uuid::Uuid;
 /// edits a region
 #[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub struct EditTrekkieRuns {
-    pub id: Uuid,
     pub start_time: NaiveDateTime,
     pub end_time: NaiveDateTime,
     pub line: i32,

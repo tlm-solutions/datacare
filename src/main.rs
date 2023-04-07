@@ -15,7 +15,7 @@ use diesel::PgConnection;
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
 use actix_session::storage::RedisActorSessionStore;
-use actix_session::SessionMiddleware;
+use actix_session::{SessionMiddleware, config::BrowserSession};
 use actix_web::{cookie::Key, middleware::Logger, web, App, HttpServer};
 use actix_web_prom::{PrometheusMetrics, PrometheusMetricsBuilder};
 
@@ -114,6 +114,8 @@ async fn main() -> std::io::Result<()> {
                     secret_key.clone(),
                 )
                 .cookie_domain(Some("dvb.solutions".into()))
+                .cookie_secure(true)
+                .session_lifecycle(BrowserSession::default())
                 .build(),
             )
             .app_data(connection_pool.clone())
