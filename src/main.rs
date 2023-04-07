@@ -15,7 +15,7 @@ use diesel::PgConnection;
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
 use actix_session::storage::RedisActorSessionStore;
-use actix_session::{SessionMiddleware, config::BrowserSession};
+use actix_session::{config::BrowserSession, SessionMiddleware};
 use actix_web::{cookie::Key, middleware::Logger, web, App, HttpServer};
 use actix_web_prom::{PrometheusMetrics, PrometheusMetricsBuilder};
 

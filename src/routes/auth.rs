@@ -136,13 +136,11 @@ pub async fn user_login(
     ),
 )]
 pub async fn user_logout(
-    user_session: Option<Identity>,
+    session: Identity,
     _req: HttpRequest,
 ) -> Result<HttpResponse, ServerError> {
     // if a session is specified it will logout otherwise just ignore it
-    if let Some(session) = user_session {
-        session.logout();
-    }
+    session.logout();
 
     Ok(HttpResponse::Ok().finish())
 }
