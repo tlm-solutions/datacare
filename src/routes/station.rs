@@ -206,7 +206,7 @@ pub async fn station_create(
 pub async fn station_list(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
-    optional_params: Option<web::Form<ListRequest>>,
+    optional_params: Option<web::Query<ListRequest>>,
 ) -> Result<web::Json<ListResponse<Station>>, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,

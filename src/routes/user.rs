@@ -371,7 +371,7 @@ pub async fn user_info(
 )]
 pub async fn user_list(
     pool: web::Data<DbPool>,
-    optional_params: Option<web::Form<ListRequest>>,
+    optional_params: Option<web::Query<ListRequest>>,
     _req: HttpRequest,
 ) -> Result<web::Json<ListResponse<User>>, ServerError> {
     let mut database_connection = match pool.get() {
@@ -503,7 +503,7 @@ pub async fn user_set_roles(
     pool: web::Data<DbPool>,
     identity: Identity,
     path: web::Path<(Uuid, Uuid)>,
-    body: web::Form<SetOfRoles>,
+    body: web::Json<SetOfRoles>,
     _req: HttpRequest,
 ) -> Result<HttpResponse, ServerError> {
     let mut database_connection = match pool.get() {

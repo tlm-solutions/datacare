@@ -165,7 +165,7 @@ pub async fn region_create(
 pub async fn region_list(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
-    optional_params: Option<web::Form<ListRequest>>,
+    optional_params: Option<web::Query<ListRequest>>,
 ) -> Result<web::Json<ListResponse<Region>>, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,

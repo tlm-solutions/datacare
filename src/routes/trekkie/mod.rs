@@ -74,7 +74,7 @@ pub async fn trekkie_run_list(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
     identity: Identity,
-    optional_params: Option<web::Form<ListRequest>>,
+    optional_params: Option<web::Query<ListRequest>>,
 ) -> Result<web::Json<ListResponse<TrekkieRun>>, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,
