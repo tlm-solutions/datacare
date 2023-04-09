@@ -108,7 +108,7 @@ pub async fn trekkie_run_list(
         match trekkie_runs
             .limit(query_params.limit)
             .offset(query_params.offset)
-            .order(tlms::schema::trekkie_runs::start_time)
+            .order(tlms::schema::trekkie_runs::start_time.desc())
             .load::<TrekkieRun>(&mut database_connection)
         {
             Ok(trekkie_list) => Ok(web::Json(ListResponse {
@@ -138,7 +138,7 @@ pub async fn trekkie_run_list(
             .filter(owner.eq(session_user.user.id))
             .limit(query_params.limit)
             .offset(query_params.offset)
-            .order(tlms::schema::trekkie_runs::start_time)
+            .order(tlms::schema::trekkie_runs::start_time.desc())
             .load::<TrekkieRun>(&mut database_connection)
         {
             Ok(trekkie_list) => Ok(web::Json(ListResponse {
