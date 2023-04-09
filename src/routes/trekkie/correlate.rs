@@ -8,6 +8,7 @@ use tlms::{
     trekkie::TrekkieRun,
 };
 
+use actix_web::{post, get};
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest};
 use diesel::query_dsl::RunQueryDsl;
@@ -49,6 +50,7 @@ pub struct CorrelateResponse {
         (status = 500, description = "postgres pool error"),
     ),
 )]
+#[get("/trekkie/{id}/correlate")]
 pub async fn trekkie_correlate_get(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -117,6 +119,7 @@ pub async fn trekkie_correlate_get(
         (status = 501, description = "Not Implemented"),
     ),
 )]
+#[post("/trekkie/{id}/correlate")]
 pub async fn correlate_run(
     pool: web::Data<DbPool>,
     user: Identity,

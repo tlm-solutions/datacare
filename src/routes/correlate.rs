@@ -11,6 +11,7 @@ use tlms::locations::{
 };
 use tlms::trekkie::TrekkieRun;
 
+use actix_web::post;
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
@@ -68,6 +69,7 @@ pub struct UpdateAllLocationsResponse {
         (status = 501, description = "Not Implemented"),
     ),
 )]
+#[post("/locations/update_all")]
 pub async fn update_all_transmission_locations(
     pool: web::Data<DbPool>,
     user: Identity,
@@ -162,6 +164,7 @@ pub async fn update_all_transmission_locations(
         (status = 501, description = "Not Implemented"),
     ),
 )]
+#[post("/run/correlate_all")]
 pub async fn correlate_all(
     pool: web::Data<DbPool>,
     user: Identity,

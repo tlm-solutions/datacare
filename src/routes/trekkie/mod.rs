@@ -9,6 +9,7 @@ use crate::{
 use tlms::trekkie::TrekkieRun;
 use tlms::{locations::gps::GpsPoint, schema::trekkie_runs::dsl::trekkie_runs};
 
+use actix_web::{get, delete, put};
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, HttpResponse};
 use diesel::query_dsl::RunQueryDsl;
@@ -73,6 +74,7 @@ pub struct TrekkieRunInfo {
         (status = 500, description = "postgres pool error"),
     ),
 )]
+#[get("/trekkie")]
 pub async fn trekkie_run_list(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -177,6 +179,7 @@ pub async fn trekkie_run_list(
         (status = 500, description = "postgres pool error"),
     ),
 )]
+#[put("/trekkie/{id}")]
 pub async fn trekkie_run_update(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -243,6 +246,7 @@ pub async fn trekkie_run_update(
         (status = 500, description = "postgres pool error"),
     ),
 )]
+#[delete("/trekkie/{id}")]
 pub async fn trekkie_run_delete(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -294,6 +298,7 @@ pub async fn trekkie_run_delete(
         (status = 500, description = "postgres pool error"),
     ),
 )]
+#[get("/trekkie/{id}")]
 pub async fn trekkie_run_info(
     pool: web::Data<DbPool>,
     _req: HttpRequest,

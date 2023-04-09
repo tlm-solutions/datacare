@@ -9,6 +9,7 @@ use tlms::management::Station;
 use tlms::schema::regions::dsl::regions;
 use tlms::telegrams::r09::R09Type;
 
+use actix_web::{post, get, put, delete};
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, HttpResponse};
 use diesel::query_dsl::RunQueryDsl;
@@ -99,6 +100,7 @@ pub struct RegionInfoStruct {
         (status = 500, description = "postgres pool error"),
     ),
 )]
+#[post("/region")]
 pub async fn region_create(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -162,6 +164,7 @@ pub async fn region_create(
         (status = 500, description = "postgres pool error"),
     ),
 )]
+#[get("/region")]
 pub async fn region_list(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -210,7 +213,7 @@ pub async fn region_list(
 
 /// Overwrites the region with supplied data. On success returns the updated region.
 #[utoipa::path(
-    post,
+    put,
     path = "/region/{id}",
     params(
         ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
@@ -231,6 +234,7 @@ pub async fn region_list(
         (status = 500, description = "postgres pool error"),
     ),
 )]
+#[put("/region/{id}")]
 pub async fn region_update(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -310,6 +314,7 @@ pub async fn region_update(
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[get("/region/{id}")]
 pub async fn region_info(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -363,6 +368,7 @@ pub async fn region_info(
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[delete("/region/{id}")]
 pub async fn region_delete(
     pool: web::Data<DbPool>,
     _req: HttpRequest,

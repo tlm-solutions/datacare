@@ -5,6 +5,7 @@ use crate::{
 use tlms::management::user::{hash_password, OrgUsersRelation, Role, User};
 use tlms::schema::users::dsl::users;
 
+use actix_web::{post, get, put, delete};
 use actix_identity::Identity;
 use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
 use diesel::query_dsl::RunQueryDsl;
@@ -70,6 +71,7 @@ pub struct SetOfRoles {
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[post("/user")]
 pub async fn user_register(
     pool: web::Data<DbPool>,
     req: HttpRequest,
@@ -177,6 +179,7 @@ pub async fn user_register(
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[delete("/user/{id}")]
 pub async fn user_delete(
     pool: web::Data<DbPool>,
     identity: Identity,
@@ -245,6 +248,7 @@ pub async fn user_delete(
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[put("/user/{id}")]
 pub async fn user_update(
     pool: web::Data<DbPool>,
     identity: Identity,
@@ -322,6 +326,7 @@ pub async fn user_update(
         (status = 400, description = "Invalid user id")
     ),
 )]
+#[get("/user/{id}")]
 pub async fn user_info(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -369,6 +374,7 @@ pub async fn user_info(
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[get("/user")]
 pub async fn user_list(
     pool: web::Data<DbPool>,
     optional_params: Option<web::Query<ListRequest>>,
@@ -433,6 +439,7 @@ pub async fn user_list(
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[get("/user/{user_id}/permissions/{org_id}")]
 pub async fn user_get_roles(
     pool: web::Data<DbPool>,
     identity: Identity,
@@ -465,8 +472,8 @@ pub async fn user_get_roles(
         .filter(organization.eq(path.1))
         .load::<OrgUsersRelation>(&mut database_connection)
     {
-        Ok(user_list) => Ok(web::Json(SetOfRoles {
-            roles: user_list.iter().map(|x| x.role).collect(),
+        Ok(found_user_list) => Ok(web::Json(SetOfRoles {
+            roles: found_user_list.iter().map(|x| x.role).collect(),
         })),
         Err(e) => {
             error!("error while listing rules {:?}", e);
@@ -499,6 +506,7 @@ pub async fn user_get_roles(
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[put("/user/{user_id}/permissions/{org_id}")]
 pub async fn user_set_roles(
     pool: web::Data<DbPool>,
     identity: Identity,

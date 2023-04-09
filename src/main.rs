@@ -119,99 +119,42 @@ async fn main() -> std::io::Result<()> {
                 .build(),
             )
             .app_data(connection_pool.clone())
-            .route(
-                "/auth/register",
-                web::post().to(routes::user::user_register),
-            )
-            .route("/auth/login", web::post().to(routes::auth::user_login))
-            .route("/auth/logout", web::post().to(routes::auth::user_logout))
-            .route("/auth", web::get().to(routes::auth::auth_info))
-            .route("/user", web::get().to(routes::user::user_list))
-            .route("/user/{id}", web::put().to(routes::user::user_update))
-            .route("/user/{id}", web::delete().to(routes::user::user_delete))
-            .route("/user/{id}", web::get().to(routes::user::user_info))
-            .route(
-                "/user/{id}/permissions/{org_id}",
-                web::get().to(routes::user::user_get_roles),
-            )
-            .route(
-                "/user/{id}/permissions/{org_id}",
-                web::put().to(routes::user::user_set_roles),
-            )
-            .route("/region", web::post().to(routes::region::region_create))
-            .route("/region", web::get().to(routes::region::region_list))
-            .route("/region/{id}", web::put().to(routes::region::region_update))
-            .route("/region/{id}", web::get().to(routes::region::region_info))
-            .route(
-                "/region/{id}",
-                web::delete().to(routes::region::region_delete),
-            )
-            .route("/station", web::post().to(routes::station::station_create))
-            .route("/station", web::get().to(routes::station::station_list))
-            .route(
-                "/station/{id}",
-                web::get().to(routes::station::station_info),
-            )
-            .route(
-                "/station/{id}",
-                web::delete().to(routes::station::station_delete),
-            )
-            .route(
-                "/station/{id}",
-                web::put().to(routes::station::station_update),
-            )
-            .route(
-                "/station/{id}/approve",
-                web::post().to(routes::station::station_approve),
-            )
-            .route("/trekkie", web::get().to(routes::trekkie::trekkie_run_list))
-            .route(
-                "/trekkie/{id}",
-                web::put().to(routes::trekkie::trekkie_run_update),
-            )
-            .route(
-                "/trekkie/{id}",
-                web::delete().to(routes::trekkie::trekkie_run_delete),
-            )
-            .route(
-                "/trekkie/{id}",
-                web::get().to(routes::trekkie::trekkie_run_info),
-            )
-            .route(
-                "/trekkie/{id}/correlate",
-                web::get().to(routes::trekkie::correlate::trekkie_correlate_get),
-            )
-            .route(
-                "/trekkie/{id}/correlate",
-                web::post().to(routes::trekkie::correlate::correlate_run),
-            )
-            .route(
-                "/organization",
-                web::get().to(routes::organization::orga_list),
-            )
-            .route(
-                "/organization",
-                web::post().to(routes::organization::orga_create),
-            )
-            .route(
-                "/organization/{id}",
-                web::put().to(routes::organization::organization_update),
-            )
-            .route(
-                "/organization/{id}",
-                web::delete().to(routes::organization::organization_delete),
-            )
-            .route(
-                "/organization/{id}",
-                web::get().to(routes::organization::organization_info),
-            )
-            .route(
-                "/run/correlate_all",
-                web::post().to(routes::correlate::correlate_all),
-            )
-            .route(
-                "/locations/update_all",
-                web::post().to(routes::correlate::update_all_transmission_locations),
+            .service(
+                web::scope("/v1")
+                    .service(routes::auth::auth_info)
+                    .service(routes::auth::user_login)
+                    .service(routes::auth::user_logout)
+                    .service(routes::user::user_register)
+                    .service(routes::user::user_list)
+                    .service(routes::user::user_update)
+                    .service(routes::user::user_delete)
+                    .service(routes::user::user_info)
+                    .service(routes::user::user_get_roles)
+                    .service(routes::user::user_set_roles)
+                    .service(routes::region::region_list)
+                    .service(routes::region::region_create)
+                    .service(routes::region::region_info)
+                    .service(routes::region::region_delete)
+                    .service(routes::region::region_update)
+                    .service(routes::station::station_list)
+                    .service(routes::station::station_create)
+                    .service(routes::station::station_update)
+                    .service(routes::station::station_delete)
+                    .service(routes::station::station_approve)
+                    .service(routes::trekkie::trekkie_run_list)
+                    .service(routes::trekkie::trekkie_run_info)
+                    .service(routes::trekkie::trekkie_run_delete)
+                    .service(routes::trekkie::trekkie_run_update)
+                    .service(routes::trekkie::correlate::trekkie_correlate_get)
+                    .service(routes::trekkie::correlate::correlate_run)
+                    .service(routes::organization::orga_list)
+                    .service(routes::organization::orga_create)
+                    .service(routes::organization::organization_info)
+                    .service(routes::organization::organization_delete)
+                    .service(routes::organization::organization_update)
+                    .service(routes::correlate::correlate_all)
+                    .service(routes::correlate::update_all_transmission_locations)
+                
             )
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")

@@ -2,6 +2,7 @@ use crate::{routes::ServerError, DbPool};
 use tlms::management::user::{verify_password, AuthorizedUser, User};
 use tlms::schema::users::dsl::users;
 
+use actix_web::{post, get};
 use actix_identity::Identity;
 use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
 use diesel::query_dsl::RunQueryDsl;
@@ -73,6 +74,7 @@ pub fn fetch_user(
         (status = 401, description = "incorrect credentials")
     ),
 )]
+#[post("/auth/login")]
 pub async fn user_login(
     pool: web::Data<DbPool>,
     req: HttpRequest,
@@ -135,6 +137,7 @@ pub async fn user_login(
 
     ),
 )]
+#[post("/auth/logout")]
 pub async fn user_logout(
     session: Identity,
     _req: HttpRequest,
@@ -155,6 +158,7 @@ pub async fn user_logout(
         (status = 400, description = "invalid user id")
     ),
 )]
+#[get("/auth")]
 pub async fn auth_info(
     pool: web::Data<DbPool>,
     identity: Identity,

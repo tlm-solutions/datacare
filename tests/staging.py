@@ -14,9 +14,9 @@ def get_random_string(length):
     return "".join(random.choice(letters) for i in range(length))
 
 
-register_form = {"name": get_random_string(8), "email": get_random_string(8) + "@example.com", "password": "testtesttest"}
+register_form = {"name": "Tassilo", "email": "tassilo@dvb.solutions", "password": "1Pkv4/dpfr/FPa+J"}
 
-login_form = {"email": "test@test.com", "password": "test"}
+login_form = {"email": "tassilo@dvb.solutions", "password": "1Pkv4/dpfr/FPa+J"}
 
 update_form = {
     "id": "fill_me",
@@ -91,22 +91,9 @@ def test_station(s: requests.Session, user_id: str):
     handle_response(s.delete(HOST + "/station/{}".format(station_id)))
 
 with requests.Session() as s:
-    create_user_response = s.post(HOST + "/auth/register", json=register_form)
+    create_user_response = s.post("https://datacare.dvb.solutions/auth/login", json=login_form)
     handle_response(create_user_response)
 
-    handle_response(s.post(HOST + "/auth/logout"))
-    handle_response(s.post(HOST + "/auth/login", json=login_form))
-    response = s.get(HOST + "/auth")
-    handle_response(response)
-    user_id = json.loads(response.content)["id"]
 
-    test_region(s)
-    test_station(s, user_id)
-
-    handle_response(s.get(HOST + "/user/{}".format(user_id)))
-    handle_response(s.get(HOST + "/user"))
-
-    user_id = json.loads(create_user_response.content)["id"]
-    update_form["id"] = user_id
-    handle_response(s.put(HOST + "/user/{}".format(user_id), json=update_form))
-    handle_response(s.delete(HOST + "/user/{}".format(user_id)))
+    create_user_response = s.post("https://datacare.dvb.solutions/locations/update_all", json={"ignore_correlated_flag": True})
+    handle_response(create_user_response)

@@ -8,6 +8,7 @@ use tlms::management::user::Role;
 use tlms::management::Station;
 use tlms::schema::stations::dsl::stations;
 
+use actix_web::{post, get, put, delete};
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, HttpResponse};
 use diesel::query_dsl::RunQueryDsl;
@@ -107,6 +108,7 @@ pub struct StationInfoResponse {
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[post("/station")]
 pub async fn station_create(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -203,6 +205,7 @@ pub async fn station_create(
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[get("/station")]
 pub async fn station_list(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -270,6 +273,7 @@ pub async fn station_list(
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[put("/station/{id}")]
 pub async fn station_update(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -369,6 +373,7 @@ pub async fn station_update(
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[delete("/station/{id}")]
 pub async fn station_delete(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -456,6 +461,7 @@ pub async fn station_delete(
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[get("/station/{id}")]
 pub async fn station_info(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -517,6 +523,7 @@ pub async fn station_info(
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[post("/station/{id}/approve")]
 pub async fn station_approve(
     pool: web::Data<DbPool>,
     _req: HttpRequest,

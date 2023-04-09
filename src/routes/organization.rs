@@ -9,6 +9,7 @@ use tlms::management::user::{Organization, Role};
 use tlms::management::Station;
 use tlms::schema::organizations::dsl::organizations;
 
+use actix_web::{post, get, delete, put};
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, HttpResponse};
 use diesel::query_dsl::RunQueryDsl;
@@ -79,6 +80,7 @@ pub struct OrganizationInfoResponse {
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[post("/organization")]
 pub async fn orga_create(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -140,6 +142,7 @@ pub async fn orga_create(
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[get("/organization")]
 pub async fn orga_list(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -206,6 +209,7 @@ pub async fn orga_list(
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[put("/organization/{id}")]
 pub async fn organization_update(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -286,6 +290,7 @@ pub async fn organization_update(
         (status = 500, description = "postgres pool error"),
     ),
 )]
+#[delete("/organization/{id}")]
 pub async fn organization_delete(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -367,6 +372,7 @@ pub async fn organization_delete(
         (status = 500, description = "Postgres pool error"),
     ),
 )]
+#[get("/organization/{id}")]
 pub async fn organization_info(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
