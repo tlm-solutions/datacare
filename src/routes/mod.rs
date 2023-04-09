@@ -149,6 +149,7 @@ pub struct DeactivateRequest {
         ListResponse<Region>,
         ListResponse<Station>,
         ListResponse<User>,
+        ListResponse<user::MiniUser>,
         ListResponse<Organization>,
         ListResponse<TrekkieRun>,
         auth::LoginRequest,

@@ -50,6 +50,25 @@ pub struct SetOfRoles {
     pub roles: HashSet<Role>,
 }
 
+#[derive(Deserialize, Serialize, ToSchema, Debug)]
+pub struct MiniUser {
+    pub id: Uuid,
+    pub name: Option<String>,
+    pub deactivated: bool
+}
+
+impl From<User> for MiniUser {
+    fn from(user: User) -> Self {
+        MiniUser { 
+            id: user.id,
+            name: user.name,
+            deactivated: user.deactivated
+        }
+    }
+}
+
+
+
 /// This endpoint registers a new user. Requirements to the submitted data:
 ///
 /// - email: needs to be a valid email address
@@ -379,7 +398,7 @@ pub async fn user_list(
     pool: web::Data<DbPool>,
     optional_params: Option<web::Query<ListRequest>>,
     _req: HttpRequest,
-) -> Result<web::Json<ListResponse<User>>, ServerError> {
+) -> Result<web::Json<ListResponse<MiniUser>>, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,
         Err(e) => {
@@ -411,7 +430,7 @@ pub async fn user_list(
     {
         Ok(user_list) => Ok(web::Json(ListResponse {
             count,
-            elements: user_list,
+            elements: user_list.iter().map( |x| MiniUser::from(x.clone()) ).collect(),
         })),
         Err(e) => {
             error!("error while listing users {:?}", e);
