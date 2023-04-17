@@ -115,6 +115,7 @@ pub struct DeactivateRequest {
         region::region_list,
         region::region_info,
         region::region_delete,
+        region::region_list_reporting_points,
         station::station_create,
         station::station_list,
         station::station_info,
