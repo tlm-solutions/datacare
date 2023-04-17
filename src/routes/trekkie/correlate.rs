@@ -8,8 +8,8 @@ use tlms::{
     trekkie::TrekkieRun,
 };
 
-use actix_web::{post, get};
 use actix_identity::Identity;
+use actix_web::{get, post};
 use actix_web::{web, HttpRequest};
 use diesel::query_dsl::RunQueryDsl;
 use diesel::{ExpressionMethods, QueryDsl};

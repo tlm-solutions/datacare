@@ -8,8 +8,8 @@ use tlms::management::user::Role;
 use tlms::management::Station;
 use tlms::schema::stations::dsl::stations;
 
-use actix_web::{post, get, put, delete};
 use actix_identity::Identity;
+use actix_web::{delete, get, post, put};
 use actix_web::{web, HttpRequest, HttpResponse};
 use diesel::query_dsl::RunQueryDsl;
 use diesel::{ExpressionMethods, QueryDsl};

@@ -9,8 +9,8 @@ use crate::{
 use tlms::trekkie::TrekkieRun;
 use tlms::{locations::gps::GpsPoint, schema::trekkie_runs::dsl::trekkie_runs};
 
-use actix_web::{get, delete, put};
 use actix_identity::Identity;
+use actix_web::{delete, get, put};
 use actix_web::{web, HttpRequest, HttpResponse};
 use diesel::query_dsl::RunQueryDsl;
 use diesel::{ExpressionMethods, QueryDsl};

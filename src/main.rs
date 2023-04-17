@@ -154,8 +154,7 @@ async fn main() -> std::io::Result<()> {
                     .service(routes::organization::organization_delete)
                     .service(routes::organization::organization_update)
                     .service(routes::correlate::correlate_all)
-                    .service(routes::correlate::update_all_transmission_locations)
-                
+                    .service(routes::correlate::update_all_transmission_locations),
             )
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")

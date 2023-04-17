@@ -2,8 +2,8 @@ use crate::{routes::ServerError, DbPool};
 use tlms::management::user::{verify_password, AuthorizedUser, User};
 use tlms::schema::users::dsl::users;
 
-use actix_web::{post, get};
 use actix_identity::Identity;
+use actix_web::{get, post};
 use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
 use diesel::query_dsl::RunQueryDsl;
 use diesel::{ExpressionMethods, PgConnection, QueryDsl};
