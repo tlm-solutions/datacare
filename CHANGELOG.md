@@ -10,6 +10,7 @@
 
 - GET /user/user-id/permissions/org-id
 - PUT /user/user-id/permissions/org-id
+- GET /region/region-id/reporting_points
 
 ### Fixed
 
