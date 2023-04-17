@@ -5,12 +5,13 @@ use crate::{
 };
 
 use tlms::locations::region::{InsertRegion, Region};
+use tlms::locations::TransmissionLocation;
 use tlms::management::Station;
 use tlms::schema::regions::dsl::regions;
 use tlms::telegrams::r09::R09Type;
 
-use actix_web::{post, get, put, delete};
 use actix_identity::Identity;
+use actix_web::{delete, get, post, put};
 use actix_web::{web, HttpRequest, HttpResponse};
 use diesel::query_dsl::RunQueryDsl;
 use diesel::{ExpressionMethods, QueryDsl};
@@ -434,6 +435,51 @@ pub async fn region_delete(
                 error!("cannot delete region because of {:?}", e);
                 Err(ServerError::InternalError)
             }
+        }
+    }
+}
+
+/// Queries alls available reportingpoints for a given region
+#[utoipa::path(
+    delete,
+    path = "/region/{id}/reporting_points",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = i64, Path, description = "Identifier of the region")
+    ),
+    responses(
+        (status = 200, description = "Reporting points successfully queried", body = Vec<TransmissionLocation>),
+        (status = 500, description = "Postgres pool error"),
+    ),
+)]
+#[get("/region/{id}/reporting_points")]
+pub async fn region_list_reporting_points(
+    pool: web::Data<DbPool>,
+    _req: HttpRequest,
+    path: web::Path<(i64,)>,
+) -> Result<web::Json<Vec<TransmissionLocation>>, ServerError> {
+    let mut database_connection = match pool.get() {
+        Ok(conn) => conn,
+        Err(e) => {
+            error!("cannot get connection from connection pool {:?}", e);
+            return Err(ServerError::InternalError);
+        }
+    };
+
+    use tlms::schema::r09_transmission_locations::dsl::r09_transmission_locations;
+    use tlms::schema::r09_transmission_locations::region as r09_transmission_locations_region;
+
+    match r09_transmission_locations
+        .filter(r09_transmission_locations_region.eq(path.0))
+        .load::<TransmissionLocation>(&mut database_connection)
+    {
+        Ok(reporting_points_list) => Ok(web::Json(reporting_points_list)),
+        Err(e) => {
+            error!(
+                "database error while listing correlated reporting points {:?}",
+                e
+            );
+            Err(ServerError::InternalError)
         }
     }
 }

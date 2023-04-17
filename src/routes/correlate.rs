@@ -11,8 +11,8 @@ use tlms::locations::{
 };
 use tlms::trekkie::TrekkieRun;
 
-use actix_web::post;
 use actix_identity::Identity;
+use actix_web::post;
 use actix_web::{web, HttpRequest};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use futures::stream::futures_unordered::FuturesUnordered;

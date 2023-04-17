@@ -9,8 +9,8 @@ use tlms::management::user::{Organization, Role};
 use tlms::management::Station;
 use tlms::schema::organizations::dsl::organizations;
 
-use actix_web::{post, get, delete, put};
 use actix_identity::Identity;
+use actix_web::{delete, get, post, put};
 use actix_web::{web, HttpRequest, HttpResponse};
 use diesel::query_dsl::RunQueryDsl;
 use diesel::{ExpressionMethods, QueryDsl};

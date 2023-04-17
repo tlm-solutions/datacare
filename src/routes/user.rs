@@ -5,8 +5,8 @@ use crate::{
 use tlms::management::user::{hash_password, OrgUsersRelation, Role, User};
 use tlms::schema::users::dsl::users;
 
-use actix_web::{post, get, put, delete};
 use actix_identity::Identity;
+use actix_web::{delete, get, post, put};
 use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
 use diesel::query_dsl::RunQueryDsl;
 use diesel::{ExpressionMethods, QueryDsl};
@@ -54,20 +54,18 @@ pub struct SetOfRoles {
 pub struct MiniUser {
     pub id: Uuid,
     pub name: Option<String>,
-    pub deactivated: bool
+    pub deactivated: bool,
 }
 
 impl From<User> for MiniUser {
     fn from(user: User) -> Self {
-        MiniUser { 
+        MiniUser {
             id: user.id,
             name: user.name,
-            deactivated: user.deactivated
+            deactivated: user.deactivated,
         }
     }
 }
-
-
 
 /// This endpoint registers a new user. Requirements to the submitted data:
 ///
@@ -430,7 +428,10 @@ pub async fn user_list(
     {
         Ok(user_list) => Ok(web::Json(ListResponse {
             count,
-            elements: user_list.iter().map( |x| MiniUser::from(x.clone()) ).collect(),
+            elements: user_list
+                .iter()
+                .map(|x| MiniUser::from(x.clone()))
+                .collect(),
         })),
         Err(e) => {
             error!("error while listing users {:?}", e);
