@@ -42,7 +42,7 @@ station_update_form = {"name": "new_station_name", "lat": 54.0, "lon": 54.0, "pu
 # requests_log.setLevel(logging.DEBUG)
 # requests_log.propagate = True
 
-print_config = "minimal"
+print_config = "all"
 
 
 def handle_response(response, print_body=False):
@@ -91,9 +91,8 @@ def test_station(s: requests.Session, user_id: str):
     handle_response(s.delete(HOST + "/station/{}".format(station_id)))
 
 with requests.Session() as s:
-    create_user_response = s.post("https://datacare.dvb.solutions/auth/login", json=login_form)
+    create_user_response = s.post("https://datacare.dvb.solutions/v1/auth/login", json=login_form)
     handle_response(create_user_response)
 
-
-    create_user_response = s.post("https://datacare.dvb.solutions/locations/update_all", json={"ignore_correlated_flag": True})
+    create_user_response = s.post("https://datacare.dvb.solutions/v1/locations/update_all", json={"ignore_correlated_flag": True})
     handle_response(create_user_response)

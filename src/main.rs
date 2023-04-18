@@ -73,6 +73,10 @@ pub fn get_prometheus() -> PrometheusMetrics {
         .expect("Failed to create prometheus metric endpoint")
 }
 
+pub fn get_domain() -> Option<String> {
+    std::env::var("COOKIE_DOMAIN").ok()
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init();
@@ -113,7 +117,7 @@ async fn main() -> std::io::Result<()> {
                     RedisActorSessionStore::new(get_redis_uri()),
                     secret_key.clone(),
                 )
-                .cookie_domain(Some("dvb.solutions".into()))
+                .cookie_domain(get_domain())
                 .cookie_secure(true)
                 .session_lifecycle(BrowserSession::default())
                 .build(),

@@ -68,6 +68,11 @@ in
       default = "datacare";
       description = ''group of systemd user'';
     };
+    cookieDomain = mkOption {
+      type = types.str;
+      default = "tlm.solutions";
+      description = ''domain of the api'';
+    };
     log_level = mkOption {
       # TODO: make an enum of possible values
       type = types.str;
@@ -113,6 +118,7 @@ in
           "POSTGRES_PASSWORD_PATH" = "${cfg.database.passwordFile}";
           "REDIS_HOST" = "${cfg.redis.host}";
           "REDIS_PORT" = "${toString cfg.redis.port}";
+          "COOKIE_DOMAIN" = "${cfg.cookieDomain}";
         };
 
         serviceConfig = {
