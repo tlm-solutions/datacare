@@ -14,9 +14,9 @@ def get_random_string(length):
     return "".join(random.choice(letters) for i in range(length))
 
 
-register_form = {"name": "Tassilo", "email": "tassilo@dvb.solutions", "password": "1Pkv4/dpfr/FPa+J"}
+register_form = {"name": "Tassilo", "email": "tassilo@dvb.solutions", "password": "password"}
 
-login_form = {"email": "tassilo@dvb.solutions", "password": "1Pkv4/dpfr/FPa+J"}
+login_form = {"email": "tassilo@dvb.solutions", "password": "password"}
 
 update_form = {
     "id": "fill_me",
