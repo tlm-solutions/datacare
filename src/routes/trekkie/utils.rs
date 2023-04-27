@@ -69,7 +69,8 @@ pub async fn correlate_single_run(
     let locs = match correlate_trekkie_run(&telegrams, queried_gps, corr_window, run.id, run.owner)
     {
         Ok(l) => l,
-        Err(_) => {
+        Err(e) => {
+            error!("error while correlating data {} with error {:?}", &run.id, &e);
             return Err(ServerError::InternalError);
         }
     };
