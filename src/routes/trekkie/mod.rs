@@ -268,6 +268,17 @@ pub async fn trekkie_run_delete(
     }
 
     use tlms::schema::trekkie_runs::id as trekkie_id;
+    use tlms::schema::gps_points::dsl::gps_points;
+    use tlms::schema::gps_points::dsl::trekkie_run as trekkie_run_gps;    
+
+    match diesel::delete(gps_points.filter(trekkie_run_gps.eq(path.0)))
+        .get_result::<GpsPoint>(&mut database_connection) {
+        Ok(_) => Ok(HttpResponse::Ok().finish()),
+        Err(e) => {
+            error!("cannot delete gps_points run because of {:?}", e);
+            Err(ServerError::InternalError)
+        }
+    };
 
     match diesel::delete(trekkie_runs.filter(trekkie_id.eq(path.0)))
         .get_result::<TrekkieRun>(&mut database_connection)

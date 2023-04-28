@@ -16,7 +16,7 @@ def get_random_string(length):
 
 register_form = {"name": "Tassilo", "email": "tassilo@dvb.solutions", "password": "password"}
 
-login_form = {"email": "tassilo@dvb.solutions", "password": "1Pkv4/dpfr/FPa+J"}
+login_form = {"email": "tassilo@dvb.solutions", "password": "password"}
 
 update_form = {
     "id": "fill_me",
@@ -94,5 +94,5 @@ with requests.Session() as s:
     create_user_response = s.post("https://datacare.tlm.solutions/v1/auth/login", json=login_form)
     handle_response(create_user_response)
 
-    create_user_response = s.post("https://datacare.tlm.solutions/v1/run/correlate_all", json={"ignore_correlated_flag": True})
+    create_user_response = s.post("https://datacare.tlm.solutions/v1/locations/update_all", json={"ignore_correlated_flag": True})
     handle_response(create_user_response)

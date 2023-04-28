@@ -57,6 +57,12 @@ pub struct MiniUser {
     pub deactivated: bool,
 }
 
+#[derive(Deserialize, Serialize, ToSchema, Debug)]
+pub enum UserOption {
+    Small(MiniUser),
+    Big(User)
+}
+
 impl From<User> for MiniUser {
     fn from(user: User) -> Self {
         MiniUser {
@@ -347,8 +353,9 @@ pub async fn user_update(
 pub async fn user_info(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
+    identity: Identity,
     path: web::Path<(Uuid,)>,
-) -> Result<web::Json<User>, ServerError> {
+) -> Result<web::Json<UserOption>, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,
         Err(e) => {
@@ -371,7 +378,17 @@ pub async fn user_info(
         }
     };
 
-    Ok(web::Json(user))
+    let session_user = fetch_user(identity, &mut database_connection)?;
+
+    if session_user.is_admin() || session_user.user.id == user.id {
+        Ok(web::Json(UserOption::Big(user)))
+    } else {
+        Ok(web::Json(UserOption::Small(MiniUser {
+            id: user.id,
+            name: user.name,
+            deactivated: user.deactivated
+        })))
+    }
 }
 
 /// Returns list of users
