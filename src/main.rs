@@ -141,6 +141,8 @@ async fn main() -> std::io::Result<()> {
                     .service(routes::region::region_delete)
                     .service(routes::region::region_update)
                     .service(routes::region::region_list_reporting_points)
+                    .service(routes::region::region_list_reporting_point)
+                    .service(routes::region::region_get_reporting_point)
                     .service(routes::station::station_list)
                     .service(routes::station::station_create)
                     .service(routes::station::station_update)
