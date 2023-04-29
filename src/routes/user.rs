@@ -60,7 +60,7 @@ pub struct MiniUser {
 #[derive(Deserialize, Serialize, ToSchema, Debug)]
 pub enum UserOption {
     Small(MiniUser),
-    Big(User)
+    Big(User),
 }
 
 impl From<User> for MiniUser {
@@ -386,7 +386,7 @@ pub async fn user_info(
         Ok(web::Json(UserOption::Small(MiniUser {
             id: user.id,
             name: user.name,
-            deactivated: user.deactivated
+            deactivated: user.deactivated,
         })))
     }
 }

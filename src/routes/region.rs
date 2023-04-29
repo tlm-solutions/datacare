@@ -439,31 +439,7 @@ pub async fn region_delete(
     }
 }
 
-/// alias for backworts compatibility
-#[get("/region/{id}/reporting_points")]
-pub async fn region_list_reporting_points(
-    pool: web::Data<DbPool>,
-    req: HttpRequest,
-    path: web::Path<(i64,)>,
-) -> Result<web::Json<Vec<TransmissionLocation>>, ServerError> {
-    region_list_reporting_point(pool, req, path).await
-}
-
-/// Queries alls available reporting points for a given region
-#[utoipa::path(
-    delete,
-    path = "/region/{id}/reporting_points",
-    params(
-        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
-        ("id" = i64, Path, description = "Identifier of the region")
-    ),
-    responses(
-        (status = 200, description = "Reporting points successfully queried", body = Vec<TransmissionLocation>),
-        (status = 500, description = "Postgres pool error"),
-    ),
-)]
-#[get("/region/{id}/reporting_point")]
-pub async fn region_list_reporting_point(
+pub async fn region_list_reporting_point_help(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
     path: web::Path<(i64,)>,
@@ -495,6 +471,52 @@ pub async fn region_list_reporting_point(
 }
 
 /// Queries alls available reporting points for a given region
+///
+/// alias for backwarts compatibility use
+#[utoipa::path(
+    delete,
+    path = "/region/{id}/reporting_point",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = i64, Path, description = "Identifier of the region")
+    ),
+    responses(
+        (status = 200, description = "Reporting points successfully queried", body = Vec<TransmissionLocation>),
+        (status = 500, description = "Postgres pool error"),
+    ),
+)]
+#[get("/region/{id}/reporting_points")]
+pub async fn region_list_reporting_point_v1(
+    pool: web::Data<DbPool>,
+    req: HttpRequest,
+    path: web::Path<(i64,)>,
+) -> Result<web::Json<Vec<TransmissionLocation>>, ServerError> {
+    region_list_reporting_point_help(pool, req, path).await
+}
+
+/// Queries alls available reporting points for a given region
+#[utoipa::path(
+    delete,
+    path = "/region/{id}/reporting_point",
+    params(
+        ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
+        ("id" = i64, Path, description = "Identifier of the region")
+    ),
+    responses(
+        (status = 200, description = "Reporting points successfully queried", body = Vec<TransmissionLocation>),
+        (status = 500, description = "Postgres pool error"),
+    ),
+)]
+#[get("/region/{id}/reporting_point")]
+pub async fn region_list_reporting_point_v2(
+    pool: web::Data<DbPool>,
+    req: HttpRequest,
+    path: web::Path<(i64,)>,
+) -> Result<web::Json<Vec<TransmissionLocation>>, ServerError> {
+    region_list_reporting_point_help(pool, req, path).await
+}
+
+/// Queries alls available reporting points for a given region
 #[utoipa::path(
     delete,
     path = "/region/{id}/reporting_point/{rid}",
@@ -511,7 +533,7 @@ pub async fn region_list_reporting_point(
 pub async fn region_get_reporting_point(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
-    path: web::Path<(i64,i64,)>,
+    path: web::Path<(i64, i32)>,
 ) -> Result<web::Json<Vec<TransmissionLocationRaw>>, ServerError> {
     let mut database_connection = match pool.get() {
         Ok(conn) => conn,
