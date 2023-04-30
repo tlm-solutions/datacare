@@ -474,7 +474,7 @@ pub async fn region_list_reporting_point_help(
 ///
 /// alias for backwarts compatibility use
 #[utoipa::path(
-    delete,
+    get,
     path = "/region/{id}/reporting_point",
     params(
         ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
@@ -496,7 +496,7 @@ pub async fn region_list_reporting_point_v1(
 
 /// Queries alls available reporting points for a given region
 #[utoipa::path(
-    delete,
+    get,
     path = "/region/{id}/reporting_point",
     params(
         ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
@@ -518,7 +518,7 @@ pub async fn region_list_reporting_point_v2(
 
 /// Queries alls available reporting points for a given region
 #[utoipa::path(
-    delete,
+    get,
     path = "/region/{id}/reporting_point/{rid}",
     params(
         ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
