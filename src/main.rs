@@ -87,6 +87,9 @@ async fn main() -> std::io::Result<()> {
         return Ok(());
     }
 
+    // 3 days with no interaction and the cookie is invalidated
+    const COOKIE_VALID_TIME: u64 = 60 * 60 * 24 * 3;
+
     info!("Starting Data Collection Server ... ");
     let host = args.host.as_str();
     let port = args.port;
@@ -97,6 +100,7 @@ async fn main() -> std::io::Result<()> {
     let prometheus = get_prometheus();
 
     HttpServer::new(move || {
+        // TODO: this needs to be configured
         let cors = Cors::default()
             .allow_any_header()
             .allow_any_method()
@@ -108,7 +112,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(
                 IdentityMiddleware::builder()
                     .logout_behaviour(LogoutBehaviour::PurgeSession)
-                    .visit_deadline(Some(Duration::from_secs(60 * 60 * 24 * 3)))
+                    .visit_deadline(Some(Duration::from_secs(COOKIE_VALID_TIME)))
                     .build(),
             )
             .wrap(Logger::default())

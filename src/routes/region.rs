@@ -439,6 +439,7 @@ pub async fn region_delete(
     }
 }
 
+// tiny helper function for listing reporting points in a region.
 pub async fn region_list_reporting_point_help(
     pool: web::Data<DbPool>,
     _req: HttpRequest,
@@ -472,10 +473,10 @@ pub async fn region_list_reporting_point_help(
 
 /// Queries alls available reporting points for a given region
 ///
-/// alias for backwarts compatibility use
+/// alias for backwarts compatibility use /region/{id}/reporting_point instead.
 #[utoipa::path(
     get,
-    path = "/region/{id}/reporting_point",
+    path = "/region/{id}/reporting_points",
     params(
         ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
         ("id" = i64, Path, description = "Identifier of the region")
@@ -516,16 +517,18 @@ pub async fn region_list_reporting_point_v2(
     region_list_reporting_point_help(pool, req, path).await
 }
 
-/// Queries alls available reporting points for a given region
+/// Returns all the different points that are correlated for this reporting point.
+/// This endpoint is mainly used to find incorrect data that leads to vaulty correlated points.
 #[utoipa::path(
     get,
     path = "/region/{id}/reporting_point/{rid}",
     params(
         ("x-csrf-token" = String, Header, description = "Current csrf token of user"),
-        ("id" = i64, Path, description = "Identifier of the region")
+        ("id" = i64, Path, description = "Identifier of the region"),
+        ("rid" = i32, Path, description = "Identifier of the reporting point")
     ),
     responses(
-        (status = 200, description = "Reporting points successfully queried", body = Vec<TransmissionLocation>),
+        (status = 200, description = "All the different correlated points for this reporting point.", body = Vec<TransmissionLocation>),
         (status = 500, description = "Postgres pool error"),
     ),
 )]
