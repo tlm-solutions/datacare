@@ -35,18 +35,18 @@ pub fn create_db_pool() -> DbPool {
     let default_postgres_database = String::from("tlms");
     let default_postgres_pw_path = String::from("/run/secrets/postgres_password");
 
-    let password_path = env::var("POSTGRES_PASSWORD_PATH").unwrap_or(default_postgres_pw_path);
+    let password_path = env::var("DATACARE_POSTGRES_PASSWORD_PATH").unwrap_or(default_postgres_pw_path);
     let password = fs::read_to_string(password_path)
         .map_err(|e| eprintln!("While trying to read password file: {:?}", e))
         .expect("cannot read password file!");
 
     let database_url = format!(
         "postgres://{}:{}@{}:{}/{}",
-        env::var("POSTGRES_USER").unwrap_or(default_postgres_user),
+        env::var("DATACARE_POSTGRES_USER").unwrap_or(default_postgres_user),
         password,
-        env::var("POSTGRES_HOST").unwrap_or(default_postgres_host),
-        env::var("POSTGRES_PORT").unwrap_or(default_postgres_port),
-        env::var("POSTGRES_DATABASE").unwrap_or(default_postgres_database)
+        env::var("DATACARE_POSTGRES_HOST").unwrap_or(default_postgres_host),
+        env::var("DATACARE_POSTGRES_PORT").unwrap_or(default_postgres_port),
+        env::var("DATACARE_POSTGRES_DATABASE").unwrap_or(default_postgres_database)
     );
 
     debug!("Connecting to postgres database {}", &database_url);
@@ -61,8 +61,8 @@ pub fn get_redis_uri() -> String {
 
     format!(
         "{}:{}",
-        std::env::var("REDIS_HOST").unwrap_or(default_redis_host),
-        std::env::var("REDIS_PORT").unwrap_or(default_redis_port)
+        std::env::var("DATACARE_REDIS_HOST").unwrap_or(default_redis_host),
+        std::env::var("DATACARE_REDIS_PORT").unwrap_or(default_redis_port)
     )
 }
 
@@ -74,7 +74,7 @@ pub fn get_prometheus() -> PrometheusMetrics {
 }
 
 pub fn get_domain() -> Option<String> {
-    std::env::var("COOKIE_DOMAIN").ok()
+    std::env::var("DATACARE_COOKIE_DOMAIN").ok()
 }
 
 #[actix_web::main]

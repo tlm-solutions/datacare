@@ -15,11 +15,11 @@ Server which handels users, regions and stations. This service is the main point
 ### Environment Variables
 
 - **SALT_PATH** path to file containing the salt that is used for hashing the password
-- **POSTGRES_HOST** host of postgres server
-- **POSTGRES_PORT** port of postgres server
-- **POSTGRES_USER** postgres user
-- **POSTGRES_DATABASE** postgres database to use
-- **POSTGRES_PASSWORD_PATH** password under which the tlms database is protected
+- **DATACARE_POSTGRES_HOST** host of postgres server
+- **DATACARE_POSTGRES_PORT** port of postgres server
+- **DATACARE_POSTGRES_USER** postgres user
+- **DATACARE_POSTGRES_DATABASE** postgres database to use
+- **DATACARE_POSTGRES_PASSWORD_PATH** password under which the tlms database is protected
 
 ### Commandline Arguments
 

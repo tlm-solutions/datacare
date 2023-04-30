@@ -111,14 +111,14 @@ in
           "RUST_BACKTRACE" = "${cfg.rustBacktrace}";
           "SALT_PATH" = "${cfg.saltFile}";
           "RUST_LOG" = "${cfg.log_level}";
-          "POSTGRES_HOST" = "${cfg.database.host}";
-          "POSTGRES_PORT" = "${toString cfg.database.port}";
-          "POSTGRES_USER" = "${toString cfg.database.user}";
-          "POSTGRES_DATABASE" = "${toString cfg.database.database}";
-          "POSTGRES_PASSWORD_PATH" = "${cfg.database.passwordFile}";
-          "REDIS_HOST" = "${cfg.redis.host}";
-          "REDIS_PORT" = "${toString cfg.redis.port}";
-          "COOKIE_DOMAIN" = "${cfg.cookieDomain}";
+          "DATACARE_POSTGRES_HOST" = "${cfg.database.host}";
+          "DATACARE_POSTGRES_PORT" = "${toString cfg.database.port}";
+          "DATACARE_POSTGRES_USER" = "${toString cfg.database.user}";
+          "DATACARE_POSTGRES_DATABASE" = "${toString cfg.database.database}";
+          "DATACARE_POSTGRES_PASSWORD_PATH" = "${cfg.database.passwordFile}";
+          "DATACARE_REDIS_HOST" = "${cfg.redis.host}";
+          "DATACARE_REDIS_PORT" = "${toString cfg.redis.port}";
+          "DATACARE_COOKIE_DOMAIN" = "${cfg.cookieDomain}";
         };
 
         serviceConfig = {
