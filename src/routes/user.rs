@@ -1,4 +1,5 @@
 use crate::{
+    routes::station::ForceDeleteRequest,
     routes::{auth::fetch_user, ListRequest, ListResponse, ServerError},
     DbPool,
 };
@@ -207,6 +208,7 @@ pub async fn user_delete(
     pool: web::Data<DbPool>,
     identity: Identity,
     path: web::Path<(Uuid,)>,
+    body: web::Json<Option<ForceDeleteRequest>>,
     _req: HttpRequest,
 ) -> Result<HttpResponse, ServerError> {
     let mut database_connection = match pool.get() {
@@ -226,18 +228,40 @@ pub async fn user_delete(
         return Err(ServerError::Forbidden);
     }
 
+    use tlms::schema::org_users_relations::dsl::org_users_relations;
+    use tlms::schema::org_users_relations::dsl::user_id as org_user_id;
     use tlms::schema::users::{deactivated, id};
 
-    //TODO: remove roles
-    //TODO: add force deletion
-    match diesel::update(users.filter(id.eq(path.0)))
-        .set((deactivated.eq(true),))
-        .get_result::<User>(&mut database_connection)
-    {
-        Ok(_) => Ok(HttpResponse::Ok().finish()),
-        Err(e) => {
-            error!("cannot deactivate user because of {:?}", e);
-            Err(ServerError::InternalError)
+    if body.as_ref().map(|x| x.force).unwrap_or(false) {
+        // deleting all the roles
+        if let Err(e) = diesel::delete(org_users_relations.filter(org_user_id.eq(path.0)))
+            .get_result::<OrgUsersRelation>(&mut database_connection)
+        {
+            error!("error while deleting all the roles the user has {:?}", e);
+        }
+
+        // properly deleting user
+        match diesel::delete(users.filter(id.eq(path.0)))
+            .get_result::<User>(&mut database_connection)
+        {
+            Ok(_) => Ok(HttpResponse::Ok().finish()),
+            Err(e) => {
+                // common problem is that foreign key contraints would be invalidated
+                error!("cannot delete user because of {:?}", e);
+                Err(ServerError::InternalError)
+            }
+        }
+    } else {
+        // deactivating users
+        match diesel::update(users.filter(id.eq(path.0)))
+            .set((deactivated.eq(true),))
+            .get_result::<User>(&mut database_connection)
+        {
+            Ok(_) => Ok(HttpResponse::Ok().finish()),
+            Err(e) => {
+                error!("cannot deactivate user because of {:?}", e);
+                Err(ServerError::InternalError)
+            }
         }
     }
 }

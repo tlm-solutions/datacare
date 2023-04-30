@@ -35,7 +35,8 @@ pub fn create_db_pool() -> DbPool {
     let default_postgres_database = String::from("tlms");
     let default_postgres_pw_path = String::from("/run/secrets/postgres_password");
 
-    let password_path = env::var("DATACARE_POSTGRES_PASSWORD_PATH").unwrap_or(default_postgres_pw_path);
+    let password_path =
+        env::var("DATACARE_POSTGRES_PASSWORD_PATH").unwrap_or(default_postgres_pw_path);
     let password = fs::read_to_string(password_path)
         .map_err(|e| eprintln!("While trying to read password file: {:?}", e))
         .expect("cannot read password file!");

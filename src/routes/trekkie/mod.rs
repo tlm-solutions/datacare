@@ -205,12 +205,12 @@ pub async fn trekkie_run_update(
 
     use tlms::schema::trekkie_runs::{end_time, id as trekkie_id, line, run, start_time};
 
-    // TODO add checks
-    // - start earlier then end
-    // - start newer then prev start
-    // - end older then prev end
-    //
+    // here we check that start_time is smaller then end_time
+    if request.start_time > request.end_time {
+        return Err(ServerError::BadClientData);
+    }
 
+    // updating the trekkie run
     match diesel::update(trekkie_runs.filter(trekkie_id.eq(path.0)))
         .set((
             start_time.eq(request.start_time),

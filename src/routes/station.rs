@@ -425,8 +425,7 @@ pub async fn station_delete(
 
     warn!("trying to delete station! : {}", relevant_station.id);
 
-    // TODO: check this
-    if user_session.is_admin() && request.is_some() && request.unwrap().force {
+    if user_session.is_admin() && request.map(|x| x.force).unwrap_or(false) {
         match diesel::delete(stations.filter(id.eq(path.0))).execute(&mut database_connection) {
             Ok(_) => Ok(HttpResponse::Ok().finish()),
             Err(e) => {
