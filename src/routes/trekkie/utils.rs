@@ -70,7 +70,10 @@ pub async fn correlate_single_run(
     {
         Ok(l) => l,
         Err(e) => {
-            error!("error while correlating data {} with error {:?}", &run.id, &e);
+            error!(
+                "error while correlating data {} with error {:?}",
+                &run.id, &e
+            );
             return Err(ServerError::InternalError);
         }
     };
