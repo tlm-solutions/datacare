@@ -1,8 +1,10 @@
 { config, ... }: {
   TLMS.datacare = {
     enable = true;
-    host = "0.0.0.0";
-    port = 8070;
+    http = {
+      host = "0.0.0.0";
+      port = 8070;
+    };
     database = {
       host = "127.0.0.1";
       port = config.services.postgresql.port;

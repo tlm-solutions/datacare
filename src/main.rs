@@ -1,5 +1,6 @@
 #[deny(missing_docs)]
 mod routes;
+mod security;
 mod structs;
 
 use actix_identity::config::LogoutBehaviour;
@@ -117,6 +118,7 @@ async fn main() -> std::io::Result<()> {
                     .build(),
             )
             .wrap(Logger::default())
+            .wrap(security::ExportAuthentification)
             .wrap(
                 SessionMiddleware::builder(
                     RedisActorSessionStore::new(get_redis_uri()),

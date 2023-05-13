@@ -16,21 +16,32 @@ in
       default = "FULL";
       description = ''rust backtrace'';
     };
-    host = mkOption {
-      type = types.str;
-      default = "127.0.0.1";
-      description = ''host of datacare'';
-    };
-    port = mkOption {
-      type = types.port;
-      default = 5070;
-      description = ''port of datacare'';
-    };
+
     saltFile = mkOption {
       type = types.either types.str types.path;
       default = "";
       description = ''file from where the salt can be read'';
     };
+
+    allowedIpsExport = mkOption {
+      type = types.listOf types.string;
+      default = [];
+      description = ''List of Ip Prefixes that should have access to the export endpoint'';
+    };
+
+    http = {
+      host = mkOption {
+        type = types.str;
+        default = "127.0.0.1";
+        description = ''host of datacare'';
+      };
+      port = mkOption {
+        type = types.port;
+        default = 5070;
+        description = ''port of datacare'';
+      };
+    };
+    
     database = {
       passwordFile = mkOption {
         type = types.either types.str types.path;
@@ -58,6 +69,7 @@ in
         description = ''postgres database that should be used'';
       };
     };
+
     user = mkOption {
       type = types.str;
       default = "datacare";
@@ -104,7 +116,7 @@ in
         wantedBy = [ "multi-user.target" ];
 
         script = ''
-          exec ${pkgs.datacare}/bin/datacare --host ${cfg.host} --port ${toString cfg.port}&
+          exec ${pkgs.datacare}/bin/datacare --host ${cfg.http.host} --port ${toString cfg.http.port}&
         '';
 
         environment = {
@@ -119,6 +131,7 @@ in
           "DATACARE_REDIS_HOST" = "${cfg.redis.host}";
           "DATACARE_REDIS_PORT" = "${toString cfg.redis.port}";
           "DATACARE_COOKIE_DOMAIN" = "${cfg.cookieDomain}";
+          "DATACARE_PROMETHEUS_ALLOWED_IPS" = "${builtins.toJSON cfg.allowedIpsExport}";
         };
 
         serviceConfig = {

@@ -140,8 +140,8 @@ pub async fn correlate_run(
     let req_user = fetch_user(user, &mut database_connection)?;
 
     use tlms::schema::trekkie_runs::dsl::trekkie_runs;
-    use tlms::schema::trekkie_runs::id as run_id;
     use tlms::schema::trekkie_runs::finished;
+    use tlms::schema::trekkie_runs::id as run_id;
     let run: TrekkieRun = match trekkie_runs
         .filter(run_id.eq(path.0))
         .filter(finished.eq(true))
@@ -168,7 +168,10 @@ pub async fn correlate_run(
             usr = req_user.user.id,
             r = run.id
         );
-        warn!("Run {r} already correlated. Correlation step skipped.", r = run.id);
+        warn!(
+            "Run {r} already correlated. Correlation step skipped.",
+            r = run.id
+        );
 
         return Ok(web::Json(CorrelateResponse {
             success: true,
