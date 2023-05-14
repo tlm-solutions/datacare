@@ -1,6 +1,6 @@
-{ naersk, src, lib, pkg-config, cmake, protobuf, postgresql, zlib, openssl }:
+{ buildPackage, src, lib, pkg-config, cmake, protobuf, postgresql, zlib, openssl }:
 
-naersk.buildPackage {
+buildPackage {
   pname = "datacare";
   version = "0.2.0";
 

@@ -15,6 +15,10 @@
       url = "github:tlm-solutions/tlms.rs";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    fenix = {
+      url = "github:nix-community/fenix";
+      #inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -23,19 +27,26 @@
     , nixpkgs
     , naersk
     , utils
+    , fenix
     , ...
     }:
     utils.lib.eachDefaultSystem
       (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        toolchain = with fenix.packages.${system}; combine [
+          latest.cargo
+          latest.rustc
+        ];
 
         package = pkgs.callPackage ./derivation.nix {
-          naersk = naersk.lib.${system};
+          buildPackage = (naersk.lib.${system}.override {
+            cargo = toolchain;
+            rustc = toolchain;
+          }).buildPackage;
         };
 
         test-vm-pkg = self.nixosConfigurations.datacare-mctest.config.system.build.vm;
-
       in
       rec {
         checks = packages;

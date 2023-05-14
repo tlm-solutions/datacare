@@ -28,18 +28,18 @@
     autologinUser = "root";
   };
   users.motd = ''
-  Datacare-McTest: enterprise-grade, free-range, grass-fed testing vm
-  Now with 100% less graphics!
+    Datacare-McTest: enterprise-grade, free-range, grass-fed testing vm
+    Now with 100% less graphics!
 
-  Services exposed to the host:
-  datacare: 8070
-  SSH: 2223
-  postgres: 8889
-  redis: 8062
+    Services exposed to the host:
+    datacare: 8070
+    SSH: 2223
+    postgres: 8889
+    redis: 8062
 
-  root password is "lol"
+    root password is "lol"
 
-  have fun!
+    have fun!
   '';
 
 

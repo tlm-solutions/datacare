@@ -25,7 +25,7 @@ in
 
     allowedIpsExport = mkOption {
       type = types.listOf types.string;
-      default = [];
+      default = [ ];
       description = ''List of Ip Prefixes that should have access to the export endpoint'';
     };
 
@@ -41,7 +41,7 @@ in
         description = ''port of datacare'';
       };
     };
-    
+
     database = {
       passwordFile = mkOption {
         type = types.either types.str types.path;
