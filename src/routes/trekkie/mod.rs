@@ -345,6 +345,7 @@ pub async fn trekkie_run_info(
 
     let gps = match gps_points
         .filter(trekkie_id_gps.eq(path.0))
+        .order(tlms::schema::gps_points::timestamp)
         .load::<GpsPoint>(&mut database_connection)
     {
         Ok(points) => points
