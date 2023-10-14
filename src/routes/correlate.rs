@@ -126,12 +126,24 @@ pub async fn update_all_transmission_locations(
             .ok()
         })
         .collect();
-
+    
+    
     // upsert the deduped locations
     use diesel::pg::upsert::excluded;
     use tlms::schema::r09_transmission_locations::dsl::r09_transmission_locations;
     use tlms::schema::r09_transmission_locations::lat;
     use tlms::schema::r09_transmission_locations::lon;
+
+    if corr_request.ignore_correlated_flag {
+        match diesel::delete(r09_transmission_locations).execute(&mut database_connection) {
+            Ok(_) => {}
+            Err(e) => {
+                error!("while trying to delete transmission locations: {e}");
+                return Err(ServerError::InternalError);
+            }
+        };
+    }
+
     let rows_affected = match diesel::insert_into(r09_transmission_locations)
         .values(&ins_deduped_locs)
         .on_conflict(on_constraint(
