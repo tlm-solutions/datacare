@@ -48,6 +48,13 @@ pub struct CorrelateAllRequest {
     pub ignore_correlated_flag: bool,
 }
 
+/// Request to correlate all runs
+#[derive(Serialize, Deserialize, ToSchema, Debug)]
+pub struct UpdateAllRequest {
+    /// if this flag is set old correlated positions are thrown away
+    pub delete_old: bool,
+}
+
 /// Request to update all transmission locations
 #[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub struct UpdateAllLocationsResponse {
@@ -74,6 +81,7 @@ pub async fn update_all_transmission_locations(
     pool: web::Data<DbPool>,
     user: Identity,
     _req: HttpRequest,
+    update_request: web::Json<UpdateAllRequest>,
 ) -> Result<web::Json<UpdateAllLocationsResponse>, ServerError> {
     // get connection from the pool
     let mut database_connection = match pool.get() {
@@ -134,7 +142,7 @@ pub async fn update_all_transmission_locations(
     use tlms::schema::r09_transmission_locations::lat;
     use tlms::schema::r09_transmission_locations::lon;
 
-    if corr_request.ignore_correlated_flag {
+    if update_request.delete_old {
         match diesel::delete(r09_transmission_locations).execute(&mut database_connection) {
             Ok(_) => {}
             Err(e) => {
