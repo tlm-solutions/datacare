@@ -53,6 +53,12 @@
         packages = {
           datacare = package;
           default = package;
+          docs = (pkgs.nixosOptionsDoc {
+            options = (nixpkgs.lib.nixosSystem {
+              inherit system;
+              modules = [ self.nixosModules.default ];
+            }).options.TLMS;
+          }).optionsCommonMark;
           test-vm = test-vm-pkg;
           test-vm-wrapper = pkgs.writeScript "datacare-test-vm-wrapper"
             ''
