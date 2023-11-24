@@ -177,7 +177,7 @@ pub async fn update_all_transmission_locations(
     post,
     path = "/run/correlate_all",
     responses(
-        (status = 200, description = "Correlation Successful", body = CorrelateAllResponse),
+        (status = 200, description = "Correlation Successful", body = CorrelateResponse),
         (status = 401, description = "Unauthorized"),
         (status = 403, description = "Forbidden"),
         (status = 500, description = "Interal Error"),

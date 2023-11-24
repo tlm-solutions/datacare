@@ -25,4 +25,6 @@
     bind = config.TLMS.datacare.redis.host;
     port = config.TLMS.datacare.redis.port;
   };
+
+  users.groups.datacare = {};
 }
