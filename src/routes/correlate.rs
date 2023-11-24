@@ -69,7 +69,7 @@ pub struct UpdateAllLocationsResponse {
     post,
     path = "/locations/update_all",
     responses(
-        (status = 200, description = "Correlation Successful", body = CorrelateResponse),
+        (status = 200, description = "Correlation Successful", body = UpdateAllLocationsResponse),
         (status = 401, description = "Unauthorized"),
         (status = 403, description = "Forbidden"),
         (status = 500, description = "Interal Error"),

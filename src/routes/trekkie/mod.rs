@@ -70,7 +70,7 @@ pub struct TrekkieRunInfo {
         ("user_roles" = ["admin", "user"])
     ),
     responses(
-        (status = 200, description = "list of trekkie runs", body = Vec<TrekkieRun>),
+        (status = 200, description = "list of trekkie runs", body = ListResponse<TrekkieRun>),
         (status = 500, description = "postgres pool error"),
     ),
 )]
@@ -301,7 +301,7 @@ pub async fn trekkie_run_delete(
         ("user_roles" = ["admin", "user"])
     ),
     responses(
-        (status = 200, description = "successfully return trekkie run information"),
+        (status = 200, description = "successfully return trekkie run information", body = TrekkieRunInfo),
         (status = 400, description = "invalid input data"),
         (status = 403, description = "User doesn't have correct permissions"),
         (status = 500, description = "postgres pool error"),

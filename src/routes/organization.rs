@@ -137,7 +137,7 @@ pub async fn orga_create(
         content_type = "application/json"
     ),
     responses(
-        (status = 200, description = "List of organizations was successfully returned", body = Vec<Organization>),
+        (status = 200, description = "List of organizations was successfully returned", body = ListResponse<Organization>),
         (status = 400, description = "Invalid user data"),
         (status = 500, description = "Postgres pool error"),
     ),

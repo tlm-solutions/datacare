@@ -161,7 +161,7 @@ pub async fn region_create(
         content_type = "application/json"
     ),
     responses(
-        (status = 200, description = "list of regions", body = Vec<Region>),
+        (status = 200, description = "list of regions", body = ListResponse<Region>),
         (status = 500, description = "postgres pool error"),
     ),
 )]
