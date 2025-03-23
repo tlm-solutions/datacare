@@ -7,7 +7,10 @@ use crate::{
     DbPool,
 };
 use tlms::trekkie::TrekkieRun;
-use tlms::{locations::gps::GpsPoint, schema::trekkie_runs::dsl::trekkie_runs};
+use tlms::{
+    locations::gps::GpsPoint, locations::TransmissionLocationRaw,
+    schema::trekkie_runs::dsl::trekkie_runs,
+};
 
 use actix_identity::Identity;
 use actix_web::{delete, get, put};
@@ -275,6 +278,22 @@ pub async fn trekkie_run_delete(
         .get_result::<GpsPoint>(&mut database_connection)
     {
         error!("cannot delete gps_points run because of {:?}", e);
+        return Err(ServerError::InternalError);
+    }
+
+    use tlms::schema::r09_transmission_locations_raw::dsl::r09_transmission_locations_raw;
+    use tlms::schema::r09_transmission_locations_raw::trekkie_run as r09_transmission_locations_raw_trekkie_run;
+
+    if let Err(e) = diesel::delete(
+        r09_transmission_locations_raw
+            .filter(r09_transmission_locations_raw_trekkie_run.eq(path.0)),
+    )
+    .get_result::<TransmissionLocationRaw>(&mut database_connection)
+    {
+        error!(
+            "cannot delete r09_transmission_locations_raw referencing trekkie run because of {:?}",
+            e
+        );
         return Err(ServerError::InternalError);
     }
 
