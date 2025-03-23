@@ -46,9 +46,9 @@ pub async fn correlate_single_run(
     use tlms::schema::r09_telegrams::dsl::r09_telegrams;
 
     use tlms::schema::r09_telegrams::line as telegram_line;
+    use tlms::schema::r09_telegrams::region as telegram_region;
     use tlms::schema::r09_telegrams::run_number as telegram_run;
     use tlms::schema::r09_telegrams::time as telegram_time;
-    use tlms::schema::r09_telegrams::region as telegram_region;
     let telegrams: Vec<R09SaveTelegram> = match r09_telegrams
         .filter(telegram_region.eq(run.region))
         .filter(telegram_time.ge(run.start_time))
