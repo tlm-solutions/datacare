@@ -134,8 +134,7 @@ pub async fn update_all_transmission_locations(
             .ok()
         })
         .collect();
-    
-    
+
     // upsert the deduped locations
     use diesel::pg::upsert::excluded;
     use tlms::schema::r09_transmission_locations::dsl::r09_transmission_locations;

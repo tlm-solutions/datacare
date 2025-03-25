@@ -15,7 +15,7 @@ use diesel::query_dsl::RunQueryDsl;
 use diesel::{ExpressionMethods, QueryDsl};
 
 use log::{debug, error, warn};
-use rand::{distributions::Alphanumeric, Rng};
+use rand::{distr::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -148,7 +148,7 @@ pub async fn station_create(
     };
 
     // generate token 32 base64
-    let random_token: String = rand::thread_rng()
+    let random_token: String = rand::rng()
         .sample_iter(&Alphanumeric)
         .take(32)
         .map(char::from)
