@@ -1,18 +1,27 @@
-{ buildPackage, src, lib, pkg-config, cmake, protobuf, postgresql, zlib, openssl }:
-
-buildPackage {
+{ buildPackage, lib, pkg-config, cmake, protobuf, zlib, openssl, libpq, writeScriptBin}:
+let
+datacare = buildPackage {
   pname = "datacare";
-  version = "0.2.0";
+  version = "0.3.1";
 
   src = ./.;
 
   cargoSha256 = lib.fakeSha256;
 
-  nativeBuildInputs = [ pkg-config cmake ];
-  buildInputs = [ protobuf zlib postgresql openssl ];
+  nativeBuildInputs = [ pkg-config cmake protobuf zlib openssl libpq ];
 
-  meta = with lib; {
+  preBuildHook = ''
+  '';
+
+  meta = {
     description = "Simple rust server which manages users, stations and regions";
     homepage = "https://github.com/tlm-solutions/datacare";
   };
-}
+};
+in 
+(
+  writeScriptBin "datacare" ''
+    export LD_LIBRARY_PATH=${libpq}/lib:$LD_LIBRARY_PATH
+    ${datacare}/bin/datacare
+  ''
+)
