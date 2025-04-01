@@ -22,6 +22,6 @@ in
 (
   writeScriptBin "datacare" ''
     export LD_LIBRARY_PATH=${libpq}/lib:$LD_LIBRARY_PATH
-    ${datacare}/bin/datacare
+    ${datacare}/bin/datacare $@
   ''
 )
