@@ -16,7 +16,7 @@ use actix_identity::Identity;
 use actix_web::{delete, get, put};
 use actix_web::{web, HttpRequest, HttpResponse};
 use diesel::query_dsl::RunQueryDsl;
-use diesel::{ExpressionMethods, QueryDsl};
+use diesel::{ExpressionMethods, OptionalExtension, QueryDsl};
 
 use chrono::NaiveDateTime;
 use log::{error, warn};
@@ -276,6 +276,7 @@ pub async fn trekkie_run_delete(
 
     if let Err(e) = diesel::delete(gps_points.filter(trekkie_run_gps.eq(path.0)))
         .get_result::<GpsPoint>(&mut database_connection)
+        .optional()
     {
         error!("cannot delete gps_points run because of {:?}", e);
         return Err(ServerError::InternalError);
@@ -289,6 +290,7 @@ pub async fn trekkie_run_delete(
             .filter(r09_transmission_locations_raw_trekkie_run.eq(path.0)),
     )
     .get_result::<TransmissionLocationRaw>(&mut database_connection)
+    .optional()
     {
         error!(
             "cannot delete r09_transmission_locations_raw referencing trekkie run because of {:?}",
@@ -299,6 +301,7 @@ pub async fn trekkie_run_delete(
 
     match diesel::delete(trekkie_runs.filter(trekkie_id.eq(path.0)))
         .get_result::<TrekkieRun>(&mut database_connection)
+        .optional()
     {
         Ok(_) => Ok(HttpResponse::Ok().finish()),
         Err(e) => {
