@@ -62,7 +62,7 @@ pub fn get_redis_uri() -> String {
     let default_redis_host = "127.0.0.1".to_string();
 
     format!(
-        "{}:{}",
+        "redis://{}:{}",
         std::env::var("DATACARE_REDIS_HOST").unwrap_or(default_redis_host),
         std::env::var("DATACARE_REDIS_PORT").unwrap_or(default_redis_port)
     )
