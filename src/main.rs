@@ -15,7 +15,7 @@ use diesel::PgConnection;
 
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
-use actix_session::storage::RedisActorSessionStore;
+use actix_session::storage::RedisSessionStore;
 use actix_session::{config::BrowserSession, SessionMiddleware};
 use actix_web::{cookie::Key, middleware::Logger, web, App, HttpServer};
 use actix_web_prom::{PrometheusMetrics, PrometheusMetricsBuilder};
@@ -101,6 +101,8 @@ async fn main() -> std::io::Result<()> {
     let secret_key = Key::generate();
     let prometheus = get_prometheus();
 
+    let redis_session_store = RedisSessionStore::new(get_redis_uri()).await.unwrap();
+
     HttpServer::new(move || {
         // TODO: this needs to be configured
         let cors = Cors::default()
@@ -120,14 +122,11 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::default())
             .wrap(security::ExportAuthentification)
             .wrap(
-                SessionMiddleware::builder(
-                    RedisActorSessionStore::new(get_redis_uri()),
-                    secret_key.clone(),
-                )
-                .cookie_domain(get_domain())
-                .cookie_secure(true)
-                .session_lifecycle(BrowserSession::default())
-                .build(),
+                SessionMiddleware::builder(redis_session_store.clone(), secret_key.clone())
+                    .cookie_domain(get_domain())
+                    .cookie_secure(true)
+                    .session_lifecycle(BrowserSession::default())
+                    .build(),
             )
             .app_data(connection_pool.clone())
             .service(

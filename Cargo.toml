@@ -11,7 +11,7 @@ clap = { version = "4", features = ["derive"] }
 
 actix-web = "4"
 actix-identity = "0"
-actix-session= { version = "0", features = ["redis-actor-session"] }
+actix-session= { version = "0", features = ["redis-session"] }
 actix-web-prom = "0"
 actix-cors = "0"
 
