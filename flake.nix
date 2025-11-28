@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
 
     naersk = {
       url = "github:nix-community/naersk";
@@ -11,11 +11,6 @@
       url = "github:numtide/flake-utils";
     };
 
-    tlms-rs = {
-      url = "github:tlm-solutions/tlms.rs";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     fenix = {
       url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -24,7 +19,6 @@
 
   outputs =
     inputs@{ self
-    , tlms-rs
     , nixpkgs
     , naersk
     , utils

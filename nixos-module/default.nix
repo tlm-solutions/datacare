@@ -24,7 +24,7 @@ in
     };
 
     allowedIpsExport = mkOption {
-      type = types.listOf types.string;
+      type = types.listOf types.str;
       default = [ ];
       description = ''List of Ip Prefixes that should have access to the export endpoint'';
     };
